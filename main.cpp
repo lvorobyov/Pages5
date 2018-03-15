@@ -82,7 +82,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 	switch (message) {
       case WM_CREATE:
         hInst = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
-		lpszBuffer = new TCHAR[BUFFER_SIZE];
+		lpszBuffer = (LPTSTR)malloc(BUFFER_SIZE*sizeof(TCHAR));
 		GetClientRect(hWnd, &rcClient);
 		hListBox = CreateWindow(TEXT("LISTBOX"), NULL,
 			WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_WANTKEYBOARDINPUT,
@@ -98,7 +98,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		}
 		break;
 	  case WM_DESTROY:
-        delete lpszBuffer;
+        free(lpszBuffer);
 		PostQuitMessage(0);
 		break;
 	  default:
