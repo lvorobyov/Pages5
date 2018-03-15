@@ -25,6 +25,8 @@ typedef struct _part_sheet_t {
 part_sheet_t* pages_init(int first_page, int pps);
 void pages_destroy(part_sheet_t* part);
 
+bool pages_is_lscape(part_sheet_t* part);
+int pages_count(part_sheet_t* part);
 void pages_arrange(part_sheet_t* part, int* face, int* back);
 
 #endif
