@@ -5,11 +5,12 @@
  */
 
 #include <windows.h>
+#include "resource.h"
 
 #define IDC_LISTBOX  40050
 
 #define WND_TITLE TEXT("Сортировщик таблиц")
-#define WND_MENU_NAME NULL
+#define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
 #define MSG_TITLE TEXT("Pages5")
 #define BUFFER_SIZE 512
 
