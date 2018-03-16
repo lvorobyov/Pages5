@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #include "resource.h"
+#include "dialog.h"
 
 #define IDC_LISTVIEW  40050
 
@@ -91,6 +92,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
     static LV_COLUMN lvc = {0};
     static LV_ITEM lvi = {0};
 
+    static pages_context_t ctx = { sizeof(pages_context_t) };
+
 	switch (message) {
       case WM_CREATE:
         hInst = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
@@ -127,6 +130,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 2;
         ListView_InsertColumn(hListView, 2, &lvc);
+        ctx.hwndOwner = hWnd;
+        ctx.hInstance = hInst;
+        ctx.numPages = 8;
+        ctx.pagesPerSheet = 2;
+        ctx.firstPage = 1;
+        ctx.lastPage = 8;
+        if (! GetPagesParams(&ctx)) {
+            return 0;
+        }
 		break;
 	  case WM_SIZE:
 		SetWindowPos(hListView, HWND_TOP, 0, 0,

@@ -4,7 +4,7 @@
  * @Email:  lev.vorobjev@rambler.ru
  * @Filename: pages.cpp
  * @Last modified by:   Lev Vorobjev
- * @Last modified time: 15.03.2018
+ * @Last modified time: 17.03.2018
  * @License: MIT
  * @Copyright: Copyright (c) 2017 Lev Vorobjev
  */
@@ -153,12 +153,17 @@ part_list_t* part_list_inverse(part_list_t* list, part_list_t* end) {
 }
 
 void pages_arrange(part_sheet_t* part, int sheet, int* face, int* back) {
-    part_list_t* list = pages_tree_to_list(part);
-    bool lscape = pages_is_lscape(part);
     int offset = pages_count(part) * sheet;
+    if (part -> dwType == PART_TYPE_SOME) {
+        face[0] = offset + part->page;
+        back[0] = offset + part->page + 1;
+        return;
+    }
+    bool lscape = pages_is_lscape(part);
     int height = pages_height(part, lscape);
     int width = pages_width(part, lscape);
     // Составить список страниц
+    part_list_t* list = pages_tree_to_list(part);
     part_list_t* item = list;
     part_list_t *first, *last;
     for (int i=0; i<height; i++) {
@@ -176,4 +181,5 @@ void pages_arrange(part_sheet_t* part, int sheet, int* face, int* back) {
             item = item -> next;
         }
     }
+    part_list_free(list);
 }

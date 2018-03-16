@@ -19,6 +19,8 @@ IDR_APPMENU MENU
     POPUP "Файл"
     {
         MENUITEM "Сохранить", IDM_ITEMSAVE
+        MENUITEM SEPARATOR
+        MENUITEM "Выход", IDM_ITEMQUIT
     }
     POPUP "Справка"
     {
@@ -39,9 +41,9 @@ FONT 8, "Ms Shell Dlg"
 {
     GROUPBOX        "Параметры сортировки", 0, 6, 6, 174, 98, 0, WS_EX_LEFT
     EDITTEXT        IDC_EDITNUM, 94, 20, 76, 14, ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
-    EDITTEXT        IDM_EDITPPS, 94, 40, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
-    EDITTEXT        IDM_EDITFST, 94, 60, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
-    EDITTEXT        IDM_EDITLST, 94, 80, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
+    EDITTEXT        IDC_EDITPPS, 94, 40, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
+    EDITTEXT        IDC_EDITFST, 94, 60, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
+    EDITTEXT        IDC_EDITLST, 94, 80, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
     LTEXT           "Последняя страница", 0, 16, 82, 72, 9, SS_LEFT, WS_EX_LEFT
     LTEXT           "Количество страниц", 0, 18, 22, 70, 9, SS_LEFT, WS_EX_LEFT
     LTEXT           "Страниц на листе", 0, 28, 42, 60, 9, SS_LEFT, WS_EX_LEFT
