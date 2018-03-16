@@ -5,9 +5,13 @@
  */
 
 #include <windows.h>
+#include <commctrl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <tchar.h>
 #include "resource.h"
 
-#define IDC_LISTBOX  40050
+#define IDC_LISTVIEW  40050
 
 #define WND_TITLE TEXT("Сортировщик таблиц")
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
@@ -77,21 +81,55 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 	static LPTSTR lpszBuffer;
 	DWORD dwStatus;
 
-	static HWND hListBox;
-	RECT rcClient = {0};
+	static HWND hListView;
+	RECT rc = {0};
+
+    static HIMAGELIST hImageListSmall;
+    static HIMAGELIST hImageListLarge;
+
+    static const UINT lvcMask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+    static LV_COLUMN lvc = {0};
+    static LV_ITEM lvi = {0};
 
 	switch (message) {
       case WM_CREATE:
         hInst = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 		lpszBuffer = (LPTSTR)malloc(BUFFER_SIZE*sizeof(TCHAR));
-		GetClientRect(hWnd, &rcClient);
-		hListBox = CreateWindow(TEXT("LISTBOX"), NULL,
-			WS_CHILD | WS_VISIBLE | LBS_STANDARD | LBS_WANTKEYBOARDINPUT,
-			rcClient.left, rcClient.top, rcClient.right, rcClient.bottom,
-			hWnd, (HMENU) IDC_LISTBOX, hInst, NULL);
+		GetClientRect(hWnd, &rc);
+        InitCommonControls();
+		hListView = CreateWindowEx(0L, WC_LISTVIEW, TEXT(""),
+            WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT |
+            LVS_EDITLABELS | LVS_SINGLESEL | LVS_AUTOARRANGE,
+            0, 0, rc.right - rc.left, rc.bottom - rc.top,
+            hWnd, (HMENU)IDC_LISTVIEW, hInst, NULL);
+        if (hListView == NULL)
+            return FALSE;
+        hImageListSmall = ImageList_Create(GetSystemMetrics(SM_CXSMICON),
+            GetSystemMetrics(SM_CYSMICON), ILC_MASK, 1, 1);
+        hImageListLarge = ImageList_Create(GetSystemMetrics(SM_CXICON),
+            GetSystemMetrics(SM_CYICON), ILC_MASK, 1, 1);
+        // TODO: добавить иконки
+        ListView_SetImageList(hListView, hImageListSmall, LVSIL_SMALL);
+        ListView_SetImageList(hListView, hImageListLarge, LVSIL_NORMAL);
+        // Вставка столбцов
+        lvc.mask = lvcMask;
+        lvc.fmt = LVCFMT_LEFT;
+        lvc.cx = 150;
+        _tcscpy(lpszBuffer, TEXT("Номер листа"));
+        lvc.pszText = lpszBuffer;
+        lvc.iSubItem = 0;
+        ListView_InsertColumn(hListView, 0, &lvc);
+        _tcscpy(lpszBuffer, TEXT("Лицевая сторона"));
+        lvc.pszText = lpszBuffer;
+        lvc.iSubItem = 1;
+        ListView_InsertColumn(hListView, 1, &lvc);
+        _tcscpy(lpszBuffer, TEXT("Обратная сторона"));
+        lvc.pszText = lpszBuffer;
+        lvc.iSubItem = 2;
+        ListView_InsertColumn(hListView, 2, &lvc);
 		break;
 	  case WM_SIZE:
-		SetWindowPos(hListBox, HWND_TOP, 0, 0,
+		SetWindowPos(hListView, HWND_TOP, 0, 0,
             LOWORD(lParam), HIWORD(lParam), SWP_NOMOVE);
 		break;
 	  case WM_COMMAND:

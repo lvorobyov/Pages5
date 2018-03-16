@@ -14,7 +14,7 @@ RESC = $(subst .rc,.res,$(RES))
 all: ${TARGET}
 
 ${TARGET}: ${OBJS} ${RESC}
-	g++ -mwindows -o $@ $^
+	g++ -mwindows -o $@ $^ -lcomctl32
 
 %.o: %.cpp ${HDRS}
 	g++ ${DEFINES} ${CFLAGS} ${INCLUDES} -c -o $@ $<
