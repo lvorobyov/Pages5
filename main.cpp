@@ -240,7 +240,6 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
         edtClientSubWidth = (rcClient.right-rcClient.left) - (rc.right-rc.left);
         break;
       }
-#if 1
       case WM_SIZE:
       {
         RECT rcClient = {0};
@@ -256,9 +255,7 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
             0, 0, clientWidth - edtClientSubWidth,
             edtHeight, SWP_NOMOVE);
         return 0;
-
       }
-#endif
       case WM_COMMAND:
         switch (LOWORD(wParam)) {
             case IDC_BTNSOLVE:
