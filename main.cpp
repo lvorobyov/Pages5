@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <io.h>
+#include <fcntl.h>
 #include "resource.h"
 #include "dialog.h"
 #include "pages.h"
@@ -67,7 +69,7 @@ ATOM RegMyWindowClass(HINSTANCE hInst, LPCTSTR lpszClassName) {
     wcWindowClass.hInstance = hInst;
     wcWindowClass.lpszClassName = lpszClassName;
     wcWindowClass.lpszMenuName = WND_MENU_NAME;
-    wcWindowClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    wcWindowClass.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
     wcWindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
     wcWindowClass.hbrBackground = (HBRUSH) ( COLOR_WINDOW + 1);
     wcWindowClass.cbClsExtra = 0;
@@ -118,6 +120,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 
     static HWND hSolvePane;
     static int nPaneHeight;
+
+    static OPENFILENAME ofn = { sizeof(OPENFILENAME) };
+    const int nMaxFile = 80;
 
 #if 0
     static HFONT hFont;
@@ -176,6 +181,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 2;
         ListView_InsertColumn(hListView, 2, &lvc);
+        // Инициализация
+        ofn.hInstance = hInst;
+        ofn.hwndOwner = hWnd;
+        ofn.lpstrFile = (LPTSTR)calloc(nMaxFile,sizeof(TCHAR));
+        _tcscpy(ofn.lpstrFile, TEXT("\0"));
+        ofn.nMaxFile = nMaxFile;
+        ofn.lpstrFilter = TEXT("Все файлы\0*.*\0Текстовые файлы (TXT)\0*.txt\0Значения, разделенные запятыми (CSV)\0*.csv");
+        ofn.nFilterIndex = 3;
+        ofn.lpstrFileTitle = NULL;
+        ofn.nMaxFileTitle = 0;
+        ofn.lpstrInitialDir = NULL;
+        ofn.lpstrDefExt = TEXT("csv");
+        ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_OVERWRITEPROMPT;
 #if 0
         lf.lfHeight = 12;
 	    lf.lfWeight = FW_NORMAL;
@@ -199,6 +217,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		break;
 	  case WM_COMMAND:
         switch (LOWORD(wParam)) {
+          case IDM_ITEMQUIT:
+            PostQuitMessage(0);
+            return 0L;
+            break;
+          case IDM_ITEMABOUT:
+            _stprintf(lpszBuffer, TEXT("%s, version %s\n\n%s\n\n%s"),
+                TEXT("Pages5"), TEXT("2.0"),
+                TEXT("Утилита для сортировки страниц перед печатью"),
+                TEXT("Copyright (c) 2018 Lev Vorobjev"));
+            MessageBox(hWnd, lpszBuffer, TEXT("О программе ")
+                MSG_TITLE, MB_OK | MB_ICONINFORMATION);
+            break;
+          case IDM_ITEMSAVE:
+          {
+            ofn.lpstrTitle = TEXT("Сохранить таблицу листов, как");
+            if (GetSaveFileName(&ofn)) {
+                FILE *f = _tfopen(ofn.lpstrFile, TEXT("w"));
+                _setmode(_fileno(f), _O_U8TEXT);
+                _ftprintf(f, TEXT("\"Номер листа\",\"Лицевая сторона\",\"Обратная сторона\"\n"));
+                for (int i=0; i < ctx.nSheets; i++) {
+                    _ftprintf(f, TEXT("%d,\"%s\",\"%s\"\n"), ctx.items[i].nSheet,
+                        ctx.items[i].lpszFace, ctx.items[i].lpszBack);
+                }
+                fclose(f);
+            }
+            break;
+          }
 		}
 		break;
       case WM_NOTIFY:
@@ -229,6 +274,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         free(ctx.lpszPages);
         free(ctx.items);
         //DeleteObject(hFont);
+        free(ofn.lpstrFile);
         free(lpszBuffer);
 		PostQuitMessage(0);
 		break;
@@ -433,6 +479,7 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     SetWindowText(hEditFace, szFace);
                     LPTSTR szBack = _tcstok_n(NULL, _T(","), numPages);
                     SetWindowText(hEditBack, szBack);
+
                     ptr = _tcstok_n(szFace, _T(","), pps);
                     for (int i=0; i < numSheets; i++) {
                         spCtx -> items[i].nSheet = i+1;
@@ -444,7 +491,7 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                         spCtx -> items[i].lpszBack = ptr;
                         ptr = _tcstok_n(NULL, _T(","), pps);
                     }
-#if 1
+
                     ListView_DeleteAllItems(spCtx -> hListView);
                     ListView_SetItemCount(spCtx -> hListView, numSheets);
                     lvi.mask = LVIF_IMAGE | LVIF_TEXT | LVIF_PARAM;
@@ -459,7 +506,6 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                             ListView_InsertItem(spCtx -> hListView, &lvi);
                         }
                     }
-#endif
                 }
                 return TRUE;
             }
