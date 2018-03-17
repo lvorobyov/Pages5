@@ -207,8 +207,13 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
     static HWND hEditFace;
     static HWND hEditBack;
     static HWND hLblInfo;
+    static int btnLeftToRight;
+    static int btnTop;
+    static int edtHeight;
+    static int edtClientSubWidth;
     switch (message) {
       case WM_INITDIALOG:
+      {
         spCtx = (solve_pane_context_t*) lParam;
         ctx.hwndOwner = spCtx -> hwndOwner;
         ctx.hInstance = spCtx -> hInstance;
@@ -220,16 +225,39 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
         hEditFace = GetDlgItem(hDlg, IDC_EDITFACE);
         hEditBack = GetDlgItem(hDlg, IDC_EDITBACK);
         hLblInfo = GetDlgItem(hDlg, IDC_LBLINFO);
+        RECT rc = {0};
+        RECT rcClient = {0};
+        POINT pt = {0};
+        GetClientRect(hDlg, &rcClient);
+        GetWindowRect(hBtnSolve, &rc);
+        pt.x = rc.left;
+        pt.y = rc.top;
+        ScreenToClient(hDlg, &pt);
+        btnLeftToRight = rcClient.right - pt.x;
+        btnTop = pt.y;
+        GetWindowRect(hEditBack, &rc);
+        edtHeight = rc.bottom - rc.top;
+        edtClientSubWidth = (rcClient.right-rcClient.left) - (rc.right-rc.left);
         break;
-#if 0
+      }
+#if 1
       case WM_SIZE:
+      {
+        RECT rcClient = {0};
+        GetClientRect(hDlg, &rcClient);
+        int clientWidth = rcClient.right - rcClient.left;
         SetWindowPos(hBtnSolve, HWND_TOP,
-            LOWORD(lParam)-61, 6, 0, 0, SWP_NOSIZE);
+            rcClient.right - btnLeftToRight,
+            btnTop, 0, 0, SWP_NOSIZE);
         SetWindowPos(hEditFace, HWND_TOP,
-            0, 0, LOWORD(lParam)-81, 14, SWP_NOMOVE);
+            0, 0, clientWidth - edtClientSubWidth,
+            edtHeight, SWP_NOMOVE);
         SetWindowPos(hEditBack, HWND_TOP,
-            0, 0, LOWORD(lParam)-81, 14, SWP_NOMOVE);
+            0, 0, clientWidth - edtClientSubWidth,
+            edtHeight, SWP_NOMOVE);
         return 0;
+
+      }
 #endif
       case WM_COMMAND:
         switch (LOWORD(wParam)) {
