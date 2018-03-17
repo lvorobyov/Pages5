@@ -27,6 +27,6 @@ void pages_destroy(part_sheet_t* part);
 
 bool pages_is_lscape(part_sheet_t* part);
 int pages_count(part_sheet_t* part);
-void pages_arrange(part_sheet_t* part, int* face, int* back);
+void pages_arrange(part_sheet_t* part, int sheet, DWORD* face, DWORD* back);
 
 #endif

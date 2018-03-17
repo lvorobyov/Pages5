@@ -43,7 +43,7 @@ FONT 8, "Ms Shell Dlg"
     LTEXT           "Лицевая сторона", 0, 9, 28, 60, 9, SS_LEFT, WS_EX_LEFT
     LTEXT           "Обратная сторона", 0, 6, 48, 63, 9, SS_LEFT, WS_EX_LEFT
     PUSHBUTTON      "Пересчитать", IDC_BTNSOLVE, 220, 6, 55, 14, 0, WS_EX_LEFT
-    LTEXT           "Печать страниц от %d до %d в %s ориентации.", IDC_LBLINFO, 6, 8, 156, 9, SS_LEFT, WS_EX_LEFT
+    LTEXT           "Печать страниц от %d до %d в %s ориентации.", IDC_LBLINFO, 6, 8, 212, 9, SS_LEFT, WS_EX_LEFT
 }
 
 

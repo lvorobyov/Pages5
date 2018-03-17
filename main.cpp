@@ -11,14 +11,14 @@
 #include <tchar.h>
 #include "resource.h"
 #include "dialog.h"
+#include "pages.h"
 
 #define IDC_LISTVIEW  40050
-//#define IDC_BTNSOLVE  40051
 
 #define WND_TITLE TEXT("Сортировщик страниц")
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
 #define MSG_TITLE TEXT("Pages5")
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 4096
 
 #define HANDLE_ERROR(lpszFunctionName, dwStatus) \
     MultiByteToWideChar(CP_ACP, 0, \
@@ -82,8 +82,8 @@ typedef struct _solve_pane_context_s {
     LPTSTR lpszBuffer;
     HWND hListView;
     int nSheets;
-    int* face;
-    int* back;
+    int nPagesPerSide;
+    DWORD* dwPages;
 } solve_pane_context_t;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
@@ -118,7 +118,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 	switch (message) {
       case WM_CREATE:
         hInst = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
-		lpszBuffer = (LPTSTR)malloc(BUFFER_SIZE*sizeof(TCHAR));
+		lpszBuffer = (LPTSTR)calloc(BUFFER_SIZE,sizeof(TCHAR));
 		GetClientRect(hWnd, &rc);
         InitCommonControls();
         ctx.hwndOwner = hWnd;
@@ -190,6 +190,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		}
 		break;
 	  case WM_DESTROY:
+        free(ctx.dwPages);
         DeleteObject(hFont);
         free(lpszBuffer);
 		PostQuitMessage(0);
@@ -261,16 +262,46 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
             case IDC_BTNSOLVE:
             {
                 if (GetPagesParams(&ctx)) {
-                    div_t n = div(ctx.numPages, ctx.pagesPerSheet);
+                    div_t n = div(ctx.numPages, ctx.pagesPerSheet*2);
                     int numSheets = n.quot;
                     if (n.rem != 0) {
                         numSheets ++;
                         _stprintf(spCtx->lpszBuffer, TEXT("Перед печатью документа "
                             "необходимо после %d-й страницы вставить %d пустых страниц."),
-                            ctx.lastPage, numSheets*ctx.pagesPerSheet - ctx.numPages);
+                            ctx.lastPage, numSheets*ctx.pagesPerSheet*2 - ctx.numPages);
                         MessageBox(spCtx->hwndOwner, spCtx->lpszBuffer,
                             MSG_TITLE, MB_OK | MB_ICONINFORMATION);
                     }
+                    const int pps = ctx.pagesPerSheet;
+                    int numPages = numSheets * pps;
+                    spCtx->nSheets = numSheets;
+                    spCtx->nPagesPerSide = pps;
+                    spCtx->dwPages = (DWORD*)realloc(spCtx->dwPages, sizeof(DWORD)*numPages*2);
+                    DWORD* face = spCtx->dwPages;
+                    DWORD* back = spCtx->dwPages + numPages;
+                    part_sheet_t* part = pages_init(ctx.firstPage, pps);
+                    for (int i=0; i<numSheets; i++) {
+                        pages_arrange(part, i, face + i*pps, back + i*pps);
+                    }
+                    _stprintf(spCtx->lpszBuffer, TEXT("Печать страниц от %d "
+                        "до %d в %s ориентации."), ctx.firstPage, ctx.lastPage,
+                        (pages_is_lscape(part)) ? TEXT("альбомной") : TEXT("портретной"));
+                    pages_destroy(part);
+                    SetWindowText(hLblInfo, spCtx->lpszBuffer);
+                    LPTSTR ptr = spCtx->lpszBuffer;
+                    for (int i=0; i<numPages; i++) {
+                        ptr += _stprintf(ptr, TEXT("%d,"), face[i]);
+                    }
+                    *(ptr-1) = _T('\0');
+                    SetWindowText(hEditFace, spCtx->lpszBuffer);
+                    ptr = spCtx->lpszBuffer;
+                    for (int i=0; i<numPages; i++) {
+                        ptr += _stprintf(ptr, TEXT("%d,"), back[i]);
+                    }
+                    *(ptr-1) = _T('\0');
+                    SetWindowText(hEditBack, spCtx->lpszBuffer);
+                    //ListView_DeleteAllItems(spCtx -> hListView);
+
                 }
                 return TRUE;
             }

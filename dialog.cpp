@@ -10,6 +10,7 @@
  */
 
 #include <windows.h>
+#include <commctrl.h>
 #include <windowsx.h>
 #include "dialog.h"
 #include "resource.h"
@@ -23,6 +24,7 @@
     return TRUE;
 
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK EditNumberWndProc(HWND, UINT, WPARAM, LPARAM, UINT_PTR, DWORD_PTR);
 
 BOOL GetPagesParams(pages_context_t* ctx) {
     return DialogBoxParam(ctx->hInstance,
@@ -32,6 +34,12 @@ BOOL GetPagesParams(pages_context_t* ctx) {
         (LPARAM) ctx
     ) == IDOK;
 }
+
+#define CH_SEP  '.'
+#define CH_NEG  '-'
+#define FL_NORMAL 0
+#define FL_NOSEP  (DWORD)0x01 // Отключение ввода точки
+#define FL_NONEG  (DWORD)0x02 // Отключение ввода минута
 
 static
 BOOL CheckPPS(int pps) {
@@ -49,12 +57,22 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     static pages_context_t* ctx;
     int value;
     BOOL bTranslated;
+    static DWORD dwEditFlags;
     switch (message) {
         case WM_INITDIALOG:
             ctx = (pages_context_t*) lParam;
             if (ctx->lpszTitle != NULL) {
                 SetWindowText(hDlg, ctx->lpszTitle);
             }
+            dwEditFlags = FL_NONEG | FL_NOSEP;
+            SetWindowSubclass( GetDlgItem(hDlg, IDC_EDITNUM),
+                EditNumberWndProc, 0, (DWORD_PTR) &dwEditFlags);
+            SetWindowSubclass( GetDlgItem(hDlg, IDC_EDITPPS),
+                EditNumberWndProc, 0, (DWORD_PTR) &dwEditFlags);
+            SetWindowSubclass( GetDlgItem(hDlg, IDC_EDITFST),
+                EditNumberWndProc, 0, (DWORD_PTR) &dwEditFlags);
+            SetWindowSubclass( GetDlgItem(hDlg, IDC_EDITLST),
+                EditNumberWndProc, 0, (DWORD_PTR) &dwEditFlags);
             SetDlgItemInt(hDlg, IDC_EDITNUM, ctx->numPages, FALSE);
             SetDlgItemInt(hDlg, IDC_EDITPPS, ctx->pagesPerSheet, FALSE);
             SetDlgItemInt(hDlg, IDC_EDITFST, ctx->firstPage, FALSE);
@@ -150,4 +168,23 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
             }
     }
     return FALSE;
+}
+
+LRESULT CALLBACK EditNumberWndProc(HWND hEdit, UINT message,
+    WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass,
+    DWORD_PTR dwRefData) {
+    DWORD flags = *(DWORD*) dwRefData;
+    switch (message) {
+        case WM_CHAR:
+            if(!((wParam >= '0' && wParam <= '9')
+                || (wParam == CH_SEP && (flags & FL_NOSEP) == 0)
+                || (wParam == CH_NEG && (flags & FL_NONEG) == 0)
+                || wParam == VK_RETURN
+                || wParam == VK_BACK))
+            {
+                return 0;
+            }
+            break;
+    }
+    return DefSubclassProc(hEdit, message, wParam, lParam);
 }

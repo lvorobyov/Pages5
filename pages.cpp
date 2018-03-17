@@ -28,7 +28,7 @@ void pages_destroy(part_sheet_t* part) {
 static void pages_init_recursive(part_sheet_t* part, int first_page, int pps) {
     if (pps > 2) {
         part -> dwType = PART_TYPE_TWO_HALF;
-        part -> parts = (part_sheet_t*)malloc(2*sizeof(part_sheet_t));
+        part -> parts = (part_sheet_t*)calloc(2,sizeof(part_sheet_t));
         int half = pps / 2;
         pages_init_recursive(&part -> parts[0], first_page, half);
         pages_init_recursive(&part -> parts[1], first_page + half, pps - half);
@@ -82,6 +82,8 @@ static
 int pages_width(part_sheet_t* part, bool lscape) {
     if (part -> dwType == PART_TYPE_TWO_HALF) {
         return (lscape?2:1) * pages_width(&part -> parts[0], !lscape);
+    } else if (part -> dwType == PART_TYPE_LEAF) {
+        return 2;
     } else {
         return 1;
     }
@@ -152,7 +154,7 @@ part_list_t* part_list_inverse(part_list_t* list, part_list_t* end) {
     }
 }
 
-void pages_arrange(part_sheet_t* part, int sheet, int* face, int* back) {
+void pages_arrange(part_sheet_t* part, int sheet, DWORD* face, DWORD* back) {
     int offset = pages_count(part) * sheet;
     if (part -> dwType == PART_TYPE_SOME) {
         face[0] = offset + part->page;
