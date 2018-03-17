@@ -5,6 +5,7 @@
 #define IDD_PAGESDLG                            101
 #define IDR_APPMENU                             103
 #define IDD_DLGSOLVE                            104
+#define IDI_ICON1                               105
 #define IDC_EDITFACE                            40000
 #define IDC_EDITPPS                             40000
 #define IDM_ITEMABOUT                           40000

@@ -18,7 +18,7 @@
 #define WND_TITLE TEXT("Сортировщик страниц")
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
 #define MSG_TITLE TEXT("Pages5")
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 512
 
 #define HANDLE_ERROR(lpszFunctionName, dwStatus) \
     MultiByteToWideChar(CP_ACP, 0, \
@@ -75,6 +75,12 @@ ATOM RegMyWindowClass(HINSTANCE hInst, LPCTSTR lpszClassName) {
     return RegisterClass(&wcWindowClass);
 }
 
+typedef struct _solve_table_item_s {
+    int nSheet;
+    LPTSTR lpszFace;
+    LPTSTR lpszBack;
+} solve_table_item_t;
+
 typedef struct _solve_pane_context_s {
     LONG lStructSize;
     HWND hwndOwner;
@@ -84,6 +90,8 @@ typedef struct _solve_pane_context_s {
     int nSheets;
     int nPagesPerSide;
     DWORD* dwPages;
+    LPTSTR lpszPages;
+    solve_table_item_t* items;
 } solve_pane_context_t;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
@@ -100,6 +108,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 
     static HIMAGELIST hImageListSmall;
     static HIMAGELIST hImageListLarge;
+    HICON hIcon;
 
     static const UINT lvcMask = LVCF_FMT | LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
     static LV_COLUMN lvc = {0};
@@ -124,7 +133,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         ctx.hwndOwner = hWnd;
         ctx.hInstance = hInst;
         ctx.lpszBuffer = lpszBuffer;
-        ctx.hListView = hListView;
         hSolvePane = CreateDialogParam(hInst,
             MAKEINTRESOURCE(IDD_DLGSOLVE),
             hWnd,
@@ -141,11 +149,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
             hWnd, (HMENU)IDC_LISTVIEW, hInst, NULL);
         if (hListView == NULL)
             return FALSE;
+        ctx.hListView = hListView;
         hImageListSmall = ImageList_Create(GetSystemMetrics(SM_CXSMICON),
-            GetSystemMetrics(SM_CYSMICON), ILC_MASK, 1, 1);
+            GetSystemMetrics(SM_CYSMICON), ILC_MASK|ILC_COLOR32, 1, 1);
         hImageListLarge = ImageList_Create(GetSystemMetrics(SM_CXICON),
-            GetSystemMetrics(SM_CYICON), ILC_MASK, 1, 1);
+            GetSystemMetrics(SM_CYICON), ILC_MASK|ILC_COLOR32, 1, 1);
         // TODO: добавить иконки
+        hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+        ImageList_AddIcon(hImageListSmall, hIcon);
+        ImageList_AddIcon(hImageListLarge, hIcon);
         ListView_SetImageList(hListView, hImageListSmall, LVSIL_SMALL);
         ListView_SetImageList(hListView, hImageListLarge, LVSIL_NORMAL);
         // Вставка столбцов
@@ -189,8 +201,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         switch (LOWORD(wParam)) {
 		}
 		break;
+      case WM_NOTIFY:
+      {
+        LV_DISPINFO * lpLvdi = (LV_DISPINFO *)(LPNMHDR)lParam;
+        solve_table_item_t* item = (solve_table_item_t*)(lpLvdi->item.lParam);
+        if(wParam != IDC_LISTVIEW)
+            return 0L;
+        switch (lpLvdi->hdr.code) {
+          case LVN_GETDISPINFO:
+            if (lpLvdi->item.mask & LVIF_TEXT) {
+                int i = lpLvdi->item.iSubItem;
+                if (i == 0) {
+                    _stprintf(lpszBuffer, TEXT("Лист %d"), item->nSheet);
+                    lpLvdi->item.pszText = lpszBuffer;
+                } else if (i == 1) {
+                    lpLvdi->item.pszText = item -> lpszFace;
+                } else {
+                    lpLvdi->item.pszText = item -> lpszBack;
+                }
+            }
+            break;
+        }
+        break;
+      }
 	  case WM_DESTROY:
         free(ctx.dwPages);
+        free(ctx.lpszPages);
+        free(ctx.items);
         //DeleteObject(hFont);
         free(lpszBuffer);
 		PostQuitMessage(0);
@@ -224,10 +261,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
   #define INC_ESI_TCHAR "inc rsi\n\t"
   #define DEC_ESI_TCHAR "dec rsi\n\t"
 #endif
-
-#define ASM_BREAK       \
-    "xor rcx,rcx\n\t"   \
-    "jmp .exit2\n\t"
 
 static
 LPTSTR _tcstok_n(LPTSTR tcs, LPCTSTR delim, __int64 count) {
@@ -293,11 +326,6 @@ LPTSTR _tcstok_n(LPTSTR tcs, LPCTSTR delim, __int64 count) {
         // Достигнут конец строки
         "mov %[ptr], 0\n\t"
         ".exit2:\n\t"
-#if 0
-        "sal rcx, 1\n\t"
-        "add rsi, rcx\n\t"
-        "mov %0,rsi\n\t"
-#endif
         : "=m" (result), [ptr]"=m"(ptr)
         : "S" (tcs), [delim]"r" (delim), "b" (count)
         : "rax", "rcx", "rdx", "rdi", "r8", "cc", "memory"
@@ -317,6 +345,7 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
     static int edtHeight;
     static int edtClientSubWidth;
     static LPTSTR lpszBuffer;
+    static LV_ITEM lvi = {0};
     switch (message) {
       case WM_INITDIALOG:
       {
@@ -383,6 +412,8 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     spCtx->nSheets = numSheets;
                     spCtx->nPagesPerSide = pps;
                     spCtx->dwPages = (DWORD*)realloc(spCtx->dwPages, sizeof(DWORD)*numPages*2);
+                    spCtx->lpszPages = (LPTSTR)realloc(spCtx->lpszPages, sizeof(TCHAR)*numPages*8);
+                    spCtx->items = (solve_table_item_t*)realloc(spCtx->items, sizeof(solve_table_item_t)*numSheets);
                     DWORD* face = spCtx->dwPages;
                     DWORD* back = spCtx->dwPages + numPages;
                     part_sheet_t* part = pages_init(ctx.firstPage, pps);
@@ -394,41 +425,41 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                         (pages_is_lscape(part)) ? TEXT("альбомной") : TEXT("портретной"));
                     pages_destroy(part);
                     SetWindowText(hLblInfo, lpszBuffer);
-                    LPTSTR ptr = lpszBuffer;
+                    LPTSTR ptr = spCtx->lpszPages;
                     for (int i=0; i<numPages*2; i++) {
                         ptr += _stprintf(ptr, TEXT("%d,"), spCtx->dwPages[i]);
                     }
-                    LPTSTR szFace = _tcstok_n(lpszBuffer, _T(","), numPages);
+                    LPTSTR szFace = _tcstok_n(spCtx->lpszPages, _T(","), numPages);
                     SetWindowText(hEditFace, szFace);
                     LPTSTR szBack = _tcstok_n(NULL, _T(","), numPages);
                     SetWindowText(hEditBack, szBack);
+                    ptr = _tcstok_n(szFace, _T(","), pps);
+                    for (int i=0; i < numSheets; i++) {
+                        spCtx -> items[i].nSheet = i+1;
+                        spCtx -> items[i].lpszFace = ptr;
+                        ptr = _tcstok_n(NULL, _T(","), pps);
+                    }
+                    ptr = _tcstok_n(szBack, _T(","), pps);
+                    for (int i=0; i < numSheets; i++) {
+                        spCtx -> items[i].lpszBack = ptr;
+                        ptr = _tcstok_n(NULL, _T(","), pps);
+                    }
+#if 1
                     ListView_DeleteAllItems(spCtx -> hListView);
-                    LV_ITEM lvi = {0};
-                    lvi.mask = LVIF_TEXT;
-                    lvi.pszText = _tcstok_n(szFace, _T(","), pps);
+                    ListView_SetItemCount(spCtx -> hListView, numSheets);
+                    lvi.mask = LVIF_IMAGE | LVIF_TEXT | LVIF_PARAM;
+                    lvi.pszText = LPSTR_TEXTCALLBACK;
                     for (int i=0; i < numSheets; i++) {
                         lvi.iItem = i;
-                        lvi.iSubItem = 1;
                         lvi.cchTextMax = 80;
-                        ListView_InsertItem(spCtx -> hListView, &lvi);
-                        lvi.pszText = _tcstok_n(NULL, _T(","), pps);
+                        lvi.lParam = (LPARAM)&spCtx -> items[i];
+                        lvi.iImage = 0;
+                        for (int j=0; j<3; j++) {
+                            lvi.iSubItem = j;
+                            ListView_InsertItem(spCtx -> hListView, &lvi);
+                        }
                     }
-                    lvi.pszText = _tcstok_n(szBack, _T(","), pps);
-                    for (int i=0; i < numSheets; i++) {
-                        lvi.iItem = i;
-                        lvi.iSubItem = 2;
-                        lvi.cchTextMax = 80;
-                        ListView_InsertItem(spCtx -> hListView, &lvi);
-                        lvi.pszText = _tcstok_n(NULL, _T(","), pps);
-                    }
-                    lvi.pszText = lpszBuffer;
-                    for (int i=0; i < numSheets; i++) {
-                        lvi.iItem = i;
-                        lvi.iSubItem = 0;
-                        lvi.cchTextMax = 80;
-                        _stprintf(lvi.pszText, TEXT("Лист %d"), i+1);
-                        ListView_InsertItem(spCtx -> hListView, &lvi);
-                    }
+#endif
                 }
                 return TRUE;
             }
