@@ -13,8 +13,9 @@
 #include "dialog.h"
 
 #define IDC_LISTVIEW  40050
+//#define IDC_BTNSOLVE  40051
 
-#define WND_TITLE TEXT("Сортировщик таблиц")
+#define WND_TITLE TEXT("Сортировщик страниц")
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
 #define MSG_TITLE TEXT("Pages5")
 #define BUFFER_SIZE 512
@@ -28,6 +29,7 @@
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 ATOM RegMyWindowClass(HINSTANCE, LPCTSTR);
+BOOL CALLBACK SolvePaneProc(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY WinMain(HINSTANCE hInstance,
              HINSTANCE         hPrevInstance,
@@ -73,6 +75,17 @@ ATOM RegMyWindowClass(HINSTANCE hInst, LPCTSTR lpszClassName) {
     return RegisterClass(&wcWindowClass);
 }
 
+typedef struct _solve_pane_context_s {
+    LONG lStructSize;
+    HWND hwndOwner;
+    HINSTANCE hInstance;
+    LPTSTR lpszBuffer;
+    HWND hListView;
+    int nSheets;
+    int* face;
+    int* back;
+} solve_pane_context_t;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
                          WPARAM wParam, LPARAM lParam) {
     HDC hdc;
@@ -92,7 +105,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
     static LV_COLUMN lvc = {0};
     static LV_ITEM lvi = {0};
 
-    static pages_context_t ctx = { sizeof(pages_context_t) };
+    static solve_pane_context_t ctx = { sizeof(solve_pane_context_t) };
+
+    static HWND hSolvePane;
+    static int nPaneHeight;
+
+#if 1
+    static HFONT hFont;
+    static LOGFONT lf = {0};
+#endif
 
 	switch (message) {
       case WM_CREATE:
@@ -100,10 +121,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 		lpszBuffer = (LPTSTR)malloc(BUFFER_SIZE*sizeof(TCHAR));
 		GetClientRect(hWnd, &rc);
         InitCommonControls();
+        ctx.hwndOwner = hWnd;
+        ctx.hInstance = hInst;
+        ctx.lpszBuffer = lpszBuffer;
+        ctx.hListView = hListView;
+        hSolvePane = CreateDialogParam(hInst,
+            MAKEINTRESOURCE(IDD_DLGSOLVE),
+            hWnd,
+            (DLGPROC) SolvePaneProc,
+            (LPARAM) &ctx);
+        GetWindowRect(hSolvePane, &rc);
+        nPaneHeight = rc.bottom - rc.top;
+        SetWindowPos(hSolvePane, HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE);
 		hListView = CreateWindowEx(0L, WC_LISTVIEW, TEXT(""),
             WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT |
             LVS_EDITLABELS | LVS_SINGLESEL | LVS_AUTOARRANGE,
-            0, 0, rc.right - rc.left, rc.bottom - rc.top,
+            0, nPaneHeight, rc.right - rc.left,
+            rc.bottom - rc.top - nPaneHeight,
             hWnd, (HMENU)IDC_LISTVIEW, hInst, NULL);
         if (hListView == NULL)
             return FALSE;
@@ -130,25 +164,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 2;
         ListView_InsertColumn(hListView, 2, &lvc);
-        ctx.hwndOwner = hWnd;
-        ctx.hInstance = hInst;
-        ctx.numPages = 8;
-        ctx.pagesPerSheet = 2;
-        ctx.firstPage = 1;
-        ctx.lastPage = 8;
-        if (! GetPagesParams(&ctx)) {
-            return 0;
-        }
+#if 1
+        lf.lfHeight = 12;
+	    lf.lfWeight = FW_NORMAL;
+        lf.lfCharSet = ANSI_CHARSET;
+        lf.lfOutPrecision = OUT_TT_PRECIS;
+        lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
+        lf.lfQuality = DEFAULT_QUALITY;
+        lf.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
+        _tcscpy(lf.lfFaceName, TEXT("Ms Shell Dlg"));
+        hFont = CreateFontIndirect(&lf);
+        SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, TRUE);
+#endif
+        SendMessage(hSolvePane, WM_COMMAND,
+            (WPARAM)IDC_BTNSOLVE, (LPARAM)0L);
 		break;
 	  case WM_SIZE:
+        SetWindowPos(hSolvePane, HWND_TOP, 0, 0,
+            LOWORD(lParam), nPaneHeight, SWP_NOMOVE);
 		SetWindowPos(hListView, HWND_TOP, 0, 0,
-            LOWORD(lParam), HIWORD(lParam), SWP_NOMOVE);
+            LOWORD(lParam), HIWORD(lParam)-nPaneHeight, SWP_NOMOVE);
 		break;
 	  case WM_COMMAND:
         switch (LOWORD(wParam)) {
 		}
 		break;
 	  case WM_DESTROY:
+        DeleteObject(hFont);
         free(lpszBuffer);
 		PostQuitMessage(0);
 		break;
@@ -156,4 +198,59 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
+}
+
+BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+    static solve_pane_context_t *spCtx;
+    static pages_context_t ctx = { sizeof(pages_context_t) };
+    static HWND hBtnSolve;
+    static HWND hEditFace;
+    static HWND hEditBack;
+    static HWND hLblInfo;
+    switch (message) {
+      case WM_INITDIALOG:
+        spCtx = (solve_pane_context_t*) lParam;
+        ctx.hwndOwner = spCtx -> hwndOwner;
+        ctx.hInstance = spCtx -> hInstance;
+        ctx.numPages = 8;
+        ctx.pagesPerSheet = 2;
+        ctx.firstPage = 1;
+        ctx.lastPage = 8;
+        hBtnSolve = GetDlgItem(hDlg, IDC_BTNSOLVE);
+        hEditFace = GetDlgItem(hDlg, IDC_EDITFACE);
+        hEditBack = GetDlgItem(hDlg, IDC_EDITBACK);
+        hLblInfo = GetDlgItem(hDlg, IDC_LBLINFO);
+        break;
+#if 0
+      case WM_SIZE:
+        SetWindowPos(hBtnSolve, HWND_TOP,
+            LOWORD(lParam)-61, 6, 0, 0, SWP_NOSIZE);
+        SetWindowPos(hEditFace, HWND_TOP,
+            0, 0, LOWORD(lParam)-81, 14, SWP_NOMOVE);
+        SetWindowPos(hEditBack, HWND_TOP,
+            0, 0, LOWORD(lParam)-81, 14, SWP_NOMOVE);
+        return 0;
+#endif
+      case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+            case IDC_BTNSOLVE:
+            {
+                if (GetPagesParams(&ctx)) {
+                    div_t n = div(ctx.numPages, ctx.pagesPerSheet);
+                    int numSheets = n.quot;
+                    if (n.rem != 0) {
+                        numSheets ++;
+                        _stprintf(spCtx->lpszBuffer, TEXT("Перед печатью документа "
+                            "необходимо после %d-й страницы вставить %d пустых страниц."),
+                            ctx.lastPage, numSheets*ctx.pagesPerSheet - ctx.numPages);
+                        MessageBox(spCtx->hwndOwner, spCtx->lpszBuffer,
+                            MSG_TITLE, MB_OK | MB_ICONINFORMATION);
+                    }
+                }
+                return TRUE;
+            }
+        }
+        break;
+    }
+    return FALSE;
 }
