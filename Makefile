@@ -2,7 +2,7 @@ TARGET = pages5
 
 INCLUDES =
 DEFINES = -D_UNICODE -DUNICODE
-CFLAGS = -std=c++11 -g -O
+CFLAGS = -std=c++11 -g -O -masm=intel
 
 SRCS = $(wildcard *.cpp)
 OBJS = $(subst .cpp,.o,$(SRCS))
