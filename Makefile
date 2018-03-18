@@ -2,7 +2,7 @@ TARGET = pages5
 
 INCLUDES =
 DEFINES = -D_UNICODE -DUNICODE
-CFLAGS = -std=c++11 -g -O -masm=intel
+CFLAGS = -std=c++11 -mfpmath=sse -march=atom -O2 -flto -masm=intel
 
 SRCS = $(wildcard *.cpp)
 OBJS = $(subst .cpp,.o,$(SRCS))
@@ -19,7 +19,7 @@ ${TARGET}: ${OBJS} ${RESC}
 %.o: %.cpp ${HDRS}
 	g++ ${DEFINES} ${CFLAGS} ${INCLUDES} -c -o $@ $<
 
-%.res: %.rc resource.h
+%.res: %.rc resource.h item.ico
 	windres $< $@ -O coff
 
 run: ${TARGET}
