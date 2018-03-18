@@ -31,7 +31,7 @@ static void pages_init_recursive(part_sheet_t* part, int first_page, int pps) {
         part -> parts = (part_sheet_t*)calloc(2,sizeof(part_sheet_t));
         int half = pps / 2;
         pages_init_recursive(&part -> parts[0], first_page, half);
-        pages_init_recursive(&part -> parts[1], first_page + half, pps - half);
+        pages_init_recursive(&part -> parts[1], first_page + half*2, pps - half);
     } else {
         part -> dwType = (pps == 2) ? PART_TYPE_LEAF : PART_TYPE_SOME;
         part -> page = first_page;
@@ -132,7 +132,7 @@ part_list_t* pages_tree_to_list(part_sheet_t* part) {
     part_list_t* list = NULL;
     if (part -> dwType == PART_TYPE_TWO_HALF) {
         list = pages_tree_to_list(&part -> parts[0]);
-        list = part_list_append(list,
+        part_list_append(list,
             pages_tree_to_list(&part -> parts[1]));
     } else {
         list = part_list_add(NULL, part);
