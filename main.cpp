@@ -148,12 +148,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         SetWindowPos(hSolvePane, HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE);
 		hListView = CreateWindowEx(0L, WC_LISTVIEW, TEXT(""),
             WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT |
-            LVS_EDITLABELS | LVS_SINGLESEL | LVS_AUTOARRANGE,
+			LVS_SINGLESEL | LVS_AUTOARRANGE | LVS_EDITLABELS,
             0, nPaneHeight, rc.right - rc.left,
             rc.bottom - rc.top - nPaneHeight,
             hWnd, (HMENU)IDC_LISTVIEW, hInst, NULL);
         if (hListView == NULL)
             return FALSE;
+		ListView_SetExtendedListViewStyle(hListView,
+			ListView_GetExtendedListViewStyle(hListView) | LVS_EX_FULLROWSELECT);
         ctx.hListView = hListView;
         hImageListSmall = ImageList_Create(GetSystemMetrics(SM_CXSMICON),
             GetSystemMetrics(SM_CYSMICON), ILC_MASK|ILC_COLOR32, 1, 1);
