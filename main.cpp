@@ -490,7 +490,7 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     if (n.rem != 0) {
                         numSheets ++;
                         emptyPages = numSheets*ctx.pagesPerSheet*2 - ctx.numPages;
-                        _stprintf(lpszBuffer, TEXT("Готово %d %s, и "
+                        _stprintf(lpszBuffer, TEXT("Готово %d %s, добавьте "
                             "%d %s после %d-й страницы."),
                              numSheets, SheetsStr(numSheets),
                              emptyPages, EmptyPagesStr(emptyPages), ctx.lastPage);
