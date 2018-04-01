@@ -1,12 +1,8 @@
 /**
- * @Author: Lev Vorobjev
- * @Date:   16.03.2018
- * @Email:  lev.vorobjev@rambler.ru
- * @Filename: dialog.h
- * @Last modified by:   Lev Vorobjev
- * @Last modified time: 17.03.2018
- * @License: MIT
- * @Copyright: Copyright (c) 2017 Lev Vorobjev
+ * dialog.h
+ *
+ * Утилита для сортировки страниц брошуры
+ * Copyright (c) 2018 Lev Vorobjev
  */
 
 #ifndef DIALOG_H

@@ -38,12 +38,12 @@ IDD_DLGSOLVE DIALOG 0, 0, 281, 66
 STYLE DS_3DLOOK | DS_CENTER | DS_CONTROL | DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
 FONT 8, "Ms Shell Dlg"
 {
+    CONTROL         "Печать страниц от %d до %d в %s ориентации.", IDC_LBLINFO, WC_STATIC, NOT WS_GROUP | SS_SIMPLE, 6, 8, 300, 9, WS_EX_TRANSPARENT
     EDITTEXT        IDC_EDITFACE, 75, 26, 200, 14, ES_AUTOHSCROLL | ES_READONLY, WS_EX_LEFT
     EDITTEXT        IDC_EDITBACK, 75, 46, 200, 14, ES_AUTOHSCROLL | ES_READONLY, WS_EX_LEFT
     LTEXT           "Лицевая сторона", 0, 9, 28, 60, 9, SS_LEFT, WS_EX_LEFT
     LTEXT           "Обратная сторона", 0, 6, 48, 63, 9, SS_LEFT, WS_EX_LEFT
     PUSHBUTTON      "Пересчитать", IDC_BTNSOLVE, 220, 6, 55, 14, 0, WS_EX_LEFT
-    LTEXT           "Печать страниц от %d до %d в %s ориентации.", IDC_LBLINFO, 6, 8, 212, 9, SS_LEFT, WS_EX_LEFT
 }
 
 

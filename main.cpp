@@ -16,6 +16,7 @@
 #include "pages.h"
 
 #define IDC_LISTVIEW  40050
+#define IDC_STATUSBAR 40051
 
 #define WND_TITLE TEXT("Сортировщик страниц")
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
@@ -89,12 +90,20 @@ typedef struct _solve_pane_context_s {
     HINSTANCE hInstance;
     LPTSTR lpszBuffer;
     HWND hListView;
+    HWND hStatusBar;
     int nSheets;
     int nPagesPerSide;
     DWORD* dwPages;
     LPTSTR lpszPages;
     solve_table_item_t* items;
 } solve_pane_context_t;
+
+static
+int GetWindowHeight(HWND hWnd) {
+    RECT rcWnd = {0};
+    GetWindowRect(hWnd, &rcWnd);
+    return (rcWnd.bottom - rcWnd.top);
+}
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
                          WPARAM wParam, LPARAM lParam) {
@@ -105,7 +114,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 	static LPTSTR lpszBuffer;
 	DWORD dwStatus;
 
-	static HWND hListView;
 	RECT rc = {0};
 
     static HIMAGELIST hImageListSmall;
@@ -120,14 +128,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 
     static HWND hSolvePane;
     static int nPaneHeight;
+    static int nStatusBarHeight;
 
     static OPENFILENAME ofn = { sizeof(OPENFILENAME) };
     const int nMaxFile = 80;
-
-#if 0
-    static HFONT hFont;
-    static LOGFONT lf = {0};
-#endif
 
 	switch (message) {
       case WM_CREATE:
@@ -146,17 +150,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         GetWindowRect(hSolvePane, &rc);
         nPaneHeight = rc.bottom - rc.top;
         SetWindowPos(hSolvePane, HWND_TOP, 0, 0, 0, 0, SWP_NOSIZE);
-		hListView = CreateWindowEx(0L, WC_LISTVIEW, TEXT(""),
+        // Создание строки состояния
+        ctx.hStatusBar = CreateWindowEx(0L, STATUSCLASSNAME, NULL,
+            WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
+            0, 0, 0, 0, hWnd, (HMENU) IDC_STATUSBAR, hInst, NULL);
+        SetWindowText(ctx.hStatusBar, TEXT("Готово"));
+        nStatusBarHeight = GetWindowHeight(ctx.hStatusBar);
+        // Создание списка
+		ctx.hListView = CreateWindowEx(0L, WC_LISTVIEW, TEXT(""),
             WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT |
 			LVS_SINGLESEL | LVS_AUTOARRANGE | LVS_EDITLABELS,
             0, nPaneHeight, rc.right - rc.left,
             rc.bottom - rc.top - nPaneHeight,
             hWnd, (HMENU)IDC_LISTVIEW, hInst, NULL);
-        if (hListView == NULL)
+        if (ctx.hListView == NULL)
             return FALSE;
-		ListView_SetExtendedListViewStyle(hListView,
-			ListView_GetExtendedListViewStyle(hListView) | LVS_EX_FULLROWSELECT);
-        ctx.hListView = hListView;
+		ListView_SetExtendedListViewStyle(ctx.hListView,
+			ListView_GetExtendedListViewStyle(ctx.hListView) | LVS_EX_FULLROWSELECT);
         hImageListSmall = ImageList_Create(GetSystemMetrics(SM_CXSMICON),
             GetSystemMetrics(SM_CYSMICON), ILC_MASK|ILC_COLOR32, 1, 1);
         hImageListLarge = ImageList_Create(GetSystemMetrics(SM_CXICON),
@@ -165,8 +175,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
         ImageList_AddIcon(hImageListSmall, hIcon);
         ImageList_AddIcon(hImageListLarge, hIcon);
-        ListView_SetImageList(hListView, hImageListSmall, LVSIL_SMALL);
-        ListView_SetImageList(hListView, hImageListLarge, LVSIL_NORMAL);
+        ListView_SetImageList(ctx.hListView, hImageListSmall, LVSIL_SMALL);
+        ListView_SetImageList(ctx.hListView, hImageListLarge, LVSIL_NORMAL);
         // Вставка столбцов
         lvc.mask = lvcMask;
         lvc.fmt = LVCFMT_LEFT;
@@ -174,16 +184,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         _tcscpy(lpszBuffer, TEXT("Номер листа"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 0;
-        ListView_InsertColumn(hListView, 0, &lvc);
+        ListView_InsertColumn(ctx.hListView, 0, &lvc);
         _tcscpy(lpszBuffer, TEXT("Лицевая сторона"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 1;
-        ListView_InsertColumn(hListView, 1, &lvc);
+        ListView_InsertColumn(ctx.hListView, 1, &lvc);
         _tcscpy(lpszBuffer, TEXT("Обратная сторона"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 2;
-        ListView_InsertColumn(hListView, 2, &lvc);
-        // Инициализация
+        ListView_InsertColumn(ctx.hListView, 2, &lvc);
+        // Инициализация диалога сохранения файла
         ofn.hInstance = hInst;
         ofn.hwndOwner = hWnd;
         ofn.lpstrFile = (LPTSTR)calloc(nMaxFile,sizeof(TCHAR));
@@ -196,26 +206,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         ofn.lpstrInitialDir = NULL;
         ofn.lpstrDefExt = TEXT("csv");
         ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_OVERWRITEPROMPT;
-#if 0
-        lf.lfHeight = 12;
-	    lf.lfWeight = FW_NORMAL;
-        lf.lfCharSet = ANSI_CHARSET;
-        lf.lfOutPrecision = OUT_TT_PRECIS;
-        lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
-        lf.lfQuality = DEFAULT_QUALITY;
-        lf.lfPitchAndFamily = DEFAULT_PITCH | FF_DONTCARE;
-        _tcscpy(lf.lfFaceName, TEXT("Ms Shell Dlg"));
-        hFont = CreateFontIndirect(&lf);
-        SendMessage(hWnd, WM_SETFONT, (WPARAM)hFont, TRUE);
-#endif
         SendMessage(hSolvePane, WM_COMMAND,
             (WPARAM)IDC_BTNSOLVE, (LPARAM)0L);
 		break;
 	  case WM_SIZE:
+        SendMessage(ctx.hStatusBar, WM_SIZE, 0, 0);
         SetWindowPos(hSolvePane, HWND_TOP, 0, 0,
             LOWORD(lParam), nPaneHeight, SWP_NOMOVE);
-		SetWindowPos(hListView, HWND_TOP, 0, 0,
-            LOWORD(lParam), HIWORD(lParam)-nPaneHeight, SWP_NOMOVE);
+		SetWindowPos(ctx.hListView, HWND_TOP, 0, 0, LOWORD(lParam),
+            HIWORD(lParam)-nPaneHeight-nStatusBarHeight, SWP_NOMOVE);
 		break;
 	  case WM_COMMAND:
         switch (LOWORD(wParam)) {
@@ -228,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
                 TEXT("Pages5"), TEXT("2.0"),
                 TEXT("Утилита для сортировки страниц перед печатью"),
                 TEXT("Copyright (c) 2018 Lev Vorobjev"));
-            MessageBox(hWnd, lpszBuffer, TEXT("О программе ")
+            MessageBox(hWnd, lpszBuffer, TEXT("О программе")
                 MSG_TITLE, MB_OK | MB_ICONINFORMATION);
             break;
           case IDM_ITEMSAVE:
@@ -275,8 +274,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         free(ctx.dwPages);
         free(ctx.lpszPages);
         free(ctx.items);
-        //DeleteObject(hFont);
         free(ofn.lpstrFile);
+        ImageList_Destroy(hImageListLarge);
+        ImageList_Destroy(hImageListSmall);
         free(lpszBuffer);
 		PostQuitMessage(0);
 		break;
@@ -310,6 +310,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
   #define DEC_ESI_TCHAR "dec rsi\n\t"
 #endif
 
+/**
+ * _tcstok_n
+ * Разделение строки на группы по несколько токенов
+ * @see _tcstok(tcs,delim)
+ * @param tcs обрабатываемая строка
+ * @param delim строка разделителей
+ * @param count количество токенов в одной группе
+ * @return указатель на строку токенов или NULL, если токенов нет
+ */
 static
 LPTSTR _tcstok_n(LPTSTR tcs, LPCTSTR delim, __int64 count) {
     static LPTSTR ptr = NULL;
@@ -447,13 +456,17 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                 if (GetPagesParams(&ctx)) {
                     div_t n = div(ctx.numPages, ctx.pagesPerSheet*2);
                     int numSheets = n.quot;
+                    int emptyPages = 0;
                     if (n.rem != 0) {
                         numSheets ++;
-                        _stprintf(lpszBuffer, TEXT("Перед печатью документа "
-                            "необходимо после %d-й страницы вставить %d пустых страниц."),
-                            ctx.lastPage, numSheets*ctx.pagesPerSheet*2 - ctx.numPages);
-                        MessageBox(spCtx->hwndOwner, lpszBuffer,
-                            MSG_TITLE, MB_OK | MB_ICONINFORMATION);
+                        emptyPages = numSheets*ctx.pagesPerSheet*2 - ctx.numPages;
+                        _stprintf(lpszBuffer, TEXT("Готово %d листов, "
+                            "%d пустых страниц после %d страницы."),
+                             numSheets, emptyPages, ctx.lastPage);
+                        SetWindowText(spCtx->hStatusBar, lpszBuffer);
+                    } else {
+                        _stprintf(lpszBuffer, TEXT("Готово %d листов"), numSheets);
+                        SetWindowText(spCtx->hStatusBar, lpszBuffer);
                     }
                     const int pps = ctx.pagesPerSheet;
                     int numPages = numSheets * pps;
@@ -469,8 +482,10 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                         pages_arrange(part, i, face + i*pps, back + i*pps);
                     }
                     _stprintf(lpszBuffer, TEXT("Печать страниц от %d "
-                        "до %d в %s ориентации."), ctx.firstPage, ctx.lastPage,
-                        (pages_is_lscape(part)) ? TEXT("альбомной") : TEXT("портретной"));
+                        "до %d в %s ориентации%s."),
+                        ctx.firstPage, ctx.lastPage,
+                        (pages_is_lscape(part)) ? TEXT("альбомной") : TEXT("портретной"),
+                        (emptyPages != 0)? TEXT(" с пустыми страницами в конце") : TEXT(""));
                     pages_destroy(part);
                     SetWindowText(hLblInfo, lpszBuffer);
                     LPTSTR ptr = spCtx->lpszPages;

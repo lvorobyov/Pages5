@@ -1,12 +1,8 @@
 /**
- * @Author: Lev Vorobjev
- * @Date:   16.03.2018
- * @Email:  lev.vorobjev@rambler.ru
- * @Filename: dialog.cpp
- * @Last modified by:   Lev Vorobjev
- * @Last modified time: 17.03.2018
- * @License: MIT
- * @Copyright: Copyright (c) 2017 Lev Vorobjev
+ * dialog.cpp
+ *
+ * Утилита для сортировки страниц брошуры
+ * Copyright (c) 2018 Lev Vorobjev
  */
 
 #include <windows.h>
@@ -16,6 +12,7 @@
 #include "resource.h"
 
 #define MSG_TITLE TEXT("Pages5")
+#define EDT_AUTOFILL 1
 
 #define TRANSLATE_FAIL(idControl)   \
     MessageBox(hDlg, TEXT("Текстовое поле не заполнено"),   \
@@ -81,7 +78,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
             break;
         case WM_COMMAND:
             switch (LOWORD(wParam)) {
-#if 1
+#if EDT_AUTOFILL
                 case IDC_EDITNUM:
                     if (HIWORD(wParam) == EN_CHANGE) {
                         value = GetDlgItemInt(hDlg, IDC_EDITNUM,

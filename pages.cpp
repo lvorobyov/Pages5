@@ -1,12 +1,8 @@
 /**
- * @Author: Lev Vorobjev
- * @Date:   15.03.2018
- * @Email:  lev.vorobjev@rambler.ru
- * @Filename: pages.cpp
- * @Last modified by:   Lev Vorobjev
- * @Last modified time: 17.03.2018
- * @License: MIT
- * @Copyright: Copyright (c) 2017 Lev Vorobjev
+ * pages.cpp
+ *
+ * Утилита для сортировки страниц брошуры
+ * Copyright (c) 2018 Lev Vorobjev
  */
 
 #include "pages.h"

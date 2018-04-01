@@ -2,7 +2,8 @@ TARGET = pages5
 
 INCLUDES =
 DEFINES = -D_UNICODE -DUNICODE
-CFLAGS = -std=c++11 -mfpmath=sse -march=atom -O2 -flto -Wl,--gc-sections,--strip-all -masm=intel
+CFLAGS = -std=c++11 -mfpmath=sse -march=atom -O2 -flto
+CLFLAGS = -s -Wl,--gc-sections -masm=intel
 
 SRCS = $(wildcard *.cpp)
 OBJS = $(subst .cpp,.o,$(SRCS))
@@ -14,7 +15,7 @@ RESC = $(subst .rc,.res,$(RES))
 all: ${TARGET}
 
 ${TARGET}: ${OBJS} ${RESC}
-	g++ ${CFLAGS} -mwindows -o $@ $^ -lcomctl32
+	g++ ${CLFLAGS} -mwindows -o $@ $^ -lcomctl32
 
 %.o: %.cpp ${HDRS}
 	g++ ${DEFINES} ${CFLAGS} ${INCLUDES} -c -o $@ $<
