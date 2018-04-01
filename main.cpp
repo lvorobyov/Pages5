@@ -390,6 +390,36 @@ LPTSTR _tcstok_n(LPTSTR tcs, LPCTSTR delim, __int64 count) {
     return result;
 }
 
+static
+LPCTSTR SheetsStr(int count) {
+    if (count == 0) {
+        return TEXT("листов");
+    } else if (count == 1) {
+        return TEXT("лист");
+    } else if (count >= 2 && count <= 4) {
+        return TEXT("листа");
+    } else if (count >= 5 && count <= 20) {
+        return TEXT("листов");
+    } else {
+        return SheetsStr(count % 10);
+    }
+}
+
+static
+LPCTSTR EmptyPagesStr(int count) {
+    if (count == 0) {
+        return TEXT("пустых страниц");
+    } else if (count == 1) {
+        return TEXT("пустая страница");
+    } else if (count >= 2 && count <= 4) {
+        return TEXT("пустые страницы");
+    } else if (count >= 5 && count <= 20) {
+        return TEXT("пустых страниц");
+    } else {
+        return EmptyPagesStr(count % 10);
+    }
+}
+
 BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
     static solve_pane_context_t *spCtx;
     static pages_context_t ctx = { sizeof(pages_context_t) };
@@ -460,12 +490,14 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     if (n.rem != 0) {
                         numSheets ++;
                         emptyPages = numSheets*ctx.pagesPerSheet*2 - ctx.numPages;
-                        _stprintf(lpszBuffer, TEXT("Готово %d листов, "
-                            "%d пустых страниц после %d страницы."),
-                             numSheets, emptyPages, ctx.lastPage);
+                        _stprintf(lpszBuffer, TEXT("Готово %d %s, и "
+                            "%d %s после %d-й страницы."),
+                             numSheets, SheetsStr(numSheets),
+                             emptyPages, EmptyPagesStr(emptyPages), ctx.lastPage);
                         SetWindowText(spCtx->hStatusBar, lpszBuffer);
                     } else {
-                        _stprintf(lpszBuffer, TEXT("Готово %d листов"), numSheets);
+                        _stprintf(lpszBuffer, TEXT("Готово %d %s"),
+                            numSheets, SheetsStr(numSheets));
                         SetWindowText(spCtx->hStatusBar, lpszBuffer);
                     }
                     const int pps = ctx.pagesPerSheet;
@@ -481,8 +513,8 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     for (int i=0; i<numSheets; i++) {
                         pages_arrange(part, i, face + i*pps, back + i*pps);
                     }
-                    _stprintf(lpszBuffer, TEXT("Печать страниц от %d "
-                        "до %d в %s ориентации%s."),
+                    _stprintf(lpszBuffer, TEXT("Печать страниц от %d-й "
+                        "до %d-й в %s ориентации%s."),
                         ctx.firstPage, ctx.lastPage,
                         (pages_is_lscape(part)) ? TEXT("альбомной") : TEXT("портретной"),
                         (emptyPages != 0)? TEXT(" с пустыми страницами в конце") : TEXT(""));

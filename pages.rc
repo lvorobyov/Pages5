@@ -18,7 +18,7 @@ IDR_APPMENU MENU
 {
     POPUP "Файл"
     {
-        MENUITEM "Сохранить", IDM_ITEMSAVE
+        MENUITEM "Сохранить CSV", IDM_ITEMSAVE
         MENUITEM SEPARATOR
         MENUITEM "Выход", IDM_ITEMQUIT
     }
