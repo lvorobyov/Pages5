@@ -7,6 +7,9 @@
 
 #include "pages.h"
 
+#include <stdlib.h>
+#include <errno.h>
+
 static void pages_init_recursive(part_sheet_t* part, int first_page, int pps);
 static void pages_destroy_recursive(part_sheet_t* part);
 
@@ -50,6 +53,9 @@ bool pages_is_lscape(part_sheet_t* part) {
             return true;
         case PART_TYPE_TWO_HALF:
             return ! pages_is_lscape(&part -> parts[1]);
+        default:
+            errno = EINVAL;
+            return false;
     }
 }
 
@@ -62,6 +68,9 @@ int pages_count(part_sheet_t* part) {
         case PART_TYPE_TWO_HALF:
             return pages_count(&part -> parts[0]) +
                 pages_count(&part -> parts[1]);
+        default:
+            errno = EINVAL;
+            return 0;
     }
 }
 
@@ -140,7 +149,7 @@ static
 part_list_t* part_list_inverse(part_list_t* list, part_list_t* end) {
     if (list == end || list == NULL) {
         return list;
-    } else if (list -> next == end || list -> next == end) {
+    } else if (list -> next == end || list -> next == NULL) {
         return list;
     } else {
         part_list_t* tmpList = part_list_inverse(list -> next, end);
@@ -150,7 +159,7 @@ part_list_t* part_list_inverse(part_list_t* list, part_list_t* end) {
     }
 }
 
-void pages_arrange(part_sheet_t* part, int sheet, DWORD* face, DWORD* back) {
+void pages_arrange(part_sheet_t* part, int sheet, uint32_t* face, uint32_t* back) {
     int offset = pages_count(part) * sheet;
     if (part -> dwType == PART_TYPE_SOME) {
         face[0] = offset + part->page;

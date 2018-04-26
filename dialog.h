@@ -8,7 +8,7 @@
 #ifndef DIALOG_H
 #define DIALOG_H
 
-#include <windef.h>
+#include <windows.h>
 
 typedef struct _pages_context_s {
     LONG lStructSize;

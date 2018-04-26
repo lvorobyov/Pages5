@@ -14,6 +14,7 @@
 #include "resource.h"
 #include "dialog.h"
 #include "pages.h"
+#include "tcstok_n.h"
 
 #define IDC_LISTVIEW  40050
 #define IDC_STATUSBAR 40051
@@ -93,7 +94,7 @@ typedef struct _solve_pane_context_s {
     HWND hStatusBar;
     int nSheets;
     int nPagesPerSide;
-    DWORD* dwPages;
+    uint32_t* dwPages;
     LPTSTR lpszPages;
     solve_table_item_t* items;
 } solve_pane_context_t;
@@ -181,15 +182,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         lvc.mask = lvcMask;
         lvc.fmt = LVCFMT_LEFT;
         lvc.cx = 150;
-        _tcscpy(lpszBuffer, TEXT("Номер листа"));
+        _tcscpy_s(lpszBuffer, BUFFER_SIZE, TEXT("Номер листа"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 0;
         ListView_InsertColumn(ctx.hListView, 0, &lvc);
-        _tcscpy(lpszBuffer, TEXT("Лицевая сторона"));
+        _tcscpy_s(lpszBuffer, BUFFER_SIZE, TEXT("Лицевая сторона"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 1;
         ListView_InsertColumn(ctx.hListView, 1, &lvc);
-        _tcscpy(lpszBuffer, TEXT("Обратная сторона"));
+        _tcscpy_s(lpszBuffer, BUFFER_SIZE, TEXT("Обратная сторона"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 2;
         ListView_InsertColumn(ctx.hListView, 2, &lvc);
@@ -197,7 +198,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         ofn.hInstance = hInst;
         ofn.hwndOwner = hWnd;
         ofn.lpstrFile = (LPTSTR)calloc(nMaxFile,sizeof(TCHAR));
-        _tcscpy(ofn.lpstrFile, TEXT("\0"));
+        _tcscpy_s(ofn.lpstrFile, nMaxFile, TEXT("\0"));
         ofn.nMaxFile = nMaxFile;
         ofn.lpstrFilter = TEXT("Все файлы\0*.*\0Текстовые файлы (TXT)\0*.txt\0Значения, разделенные запятыми (CSV)\0*.csv");
         ofn.nFilterIndex = 3;
@@ -234,7 +235,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
           {
             ofn.lpstrTitle = TEXT("Сохранить таблицу листов, как");
             if (GetSaveFileName(&ofn)) {
-                FILE *f = _tfopen(ofn.lpstrFile, TEXT("w"));
+                FILE *f = NULL;
+                _tfopen_s(&f, ofn.lpstrFile, TEXT("w"));
                 _setmode(_fileno(f), _O_U8TEXT);
                 _ftprintf(f, TEXT("\"Номер листа\",\"Лицевая сторона\",\"Обратная сторона\"\n"));
                 for (int i=0; i < ctx.nSheets; i++) {
@@ -284,110 +286,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
-}
-
-#ifdef _UNICODE
-  #define SCAS_TCHAR    "scasw\n\t"
-  #define MOVS_TCHAR    "movsw\n\t"
-  #define STOS_TCHAR    "stosw\n\t"
-  #define LODS_TCHAR    "lodsw\n\t"
-  #define CMP_AX_TCHAR  "cmp ax, word ptr [rsi]\n\t"
-  #define MOV_TCHAR_AX  "mov word ptr [rsi], ax\n\t"
-  #define MOV_TCHAR_Z   "mov word ptr [rsi-2], 0\n\t"
-  #define TCHAR_PTR     "word ptr"
-  #define INC_ESI_TCHAR "add rsi, 2\n\t"
-  #define DEC_ESI_TCHAR "sub rsi, 2\n\t"
-#else
-  #define SCAS_TCHAR    "scasb\n\t"
-  #define MOVS_TCHAR    "movsb\n\t"
-  #define STOS_TCHAR    "stosb\n\t"
-  #define LODS_TCHAR    "lodsb\n\t"
-  #define CMP_AX_TCHAR  "cmp al, byte ptr [rsi]\n\t"
-  #define MOV_TCHAR_AX  "mov byte ptr [rsi], al\n\t"
-  #define MOV_TCHAR_Z   "mov byte ptr [rsi-1], 0\n\t"
-  #define TCHAR_PTR     "byte ptr"
-  #define INC_ESI_TCHAR "inc rsi\n\t"
-  #define DEC_ESI_TCHAR "dec rsi\n\t"
-#endif
-
-/**
- * _tcstok_n
- * Разделение строки на группы по несколько токенов
- * @see _tcstok(tcs,delim)
- * @param tcs обрабатываемая строка
- * @param delim строка разделителей
- * @param count количество токенов в одной группе
- * @return указатель на строку токенов или NULL, если токенов нет
- */
-static
-LPTSTR _tcstok_n(LPTSTR tcs, LPCTSTR delim, __int64 count) {
-    static LPTSTR ptr = NULL;
-    LPTSTR result;
-    if (tcs == NULL) {
-        if (ptr == NULL) {
-            return NULL;
-        } else {
-            tcs = ptr;
-        }
-    }
-    __asm__ (
-        ".intel_syntax noprefix\n\t"
-        "cld\n\t"
-        "mov rdi, %[delim]\n\t"
-        "mov rcx, -1\n\t"
-        "xor ax, ax\n\t"
-        "repne " SCAS_TCHAR
-        "sub rcx, -1\n\t"
-        "neg rcx\n\t"
-        "mov r8, rcx\n\t"
-        "xor rdx, rdx\n\t"
-        // Пропуск ведущих разделителей
-        ".for1:\n\t"
-        LODS_TCHAR
-        "mov rdi, %[delim]\n\t"
-        "repne " SCAS_TCHAR
-        "jne .end1\n\t"
-        "jrcxz .exit\n\t"
-        "mov rcx, r8\n\t"
-        "jmp .for1\n\t"
-        ".end1:\n\t"
-        // Найден токен
-        "test rdx, rdx\n\t"
-        "jnz .end2\n\t"
-        // Запомнить начало токена
-        DEC_ESI_TCHAR
-        "mov %0, rsi\n\t"
-		INC_ESI_TCHAR
-        "inc rdx\n\t"
-        ".end2:\n\t"
-        // Найти конец токена
-        ".for2:\n\t"
-        LODS_TCHAR
-        "mov rcx, r8\n\t"
-        "mov rdi, %[delim]\n\t"
-        "repne " SCAS_TCHAR
-        "jne .for2\n\t"
-        "jrcxz .exit\n\t"
-        // Достигнут конец токена
-        "dec rbx\n\t"
-        "test rbx, rbx\n\t"
-        "jz .end3\n\t"
-        "mov rcx, r8\n\t"
-        "jmp .for1\n\t"
-        ".end3:\n\t"
-        // Найдено N токенов
-        MOV_TCHAR_Z
-        "mov %[ptr], rsi\n\t"
-        "jmp .exit2\n\t"
-        ".exit:\n\t"
-        // Достигнут конец строки
-        "mov %[ptr], 0\n\t"
-        ".exit2:\n\t"
-        : "=m" (result), [ptr]"=m"(ptr)
-        : "S" (tcs), [delim]"r" (delim), "b" (count)
-        : "rax", "rcx", "rdx", "rdi", "r8", "cc", "memory"
-    );
-    return result;
 }
 
 static
@@ -504,11 +402,11 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     int numPages = numSheets * pps;
                     spCtx->nSheets = numSheets;
                     spCtx->nPagesPerSide = pps;
-                    spCtx->dwPages = (DWORD*)realloc(spCtx->dwPages, sizeof(DWORD)*numPages*2);
+                    spCtx->dwPages = (uint32_t*)realloc(spCtx->dwPages, sizeof(uint32_t)*numPages*2);
                     spCtx->lpszPages = (LPTSTR)realloc(spCtx->lpszPages, sizeof(TCHAR)*numPages*8);
                     spCtx->items = (solve_table_item_t*)realloc(spCtx->items, sizeof(solve_table_item_t)*numSheets);
-                    DWORD* face = spCtx->dwPages;
-                    DWORD* back = spCtx->dwPages + numPages;
+                    uint32_t* face = spCtx->dwPages;
+                    uint32_t* back = spCtx->dwPages + numPages;
                     part_sheet_t* part = pages_init(ctx.firstPage, pps);
                     for (int i=0; i<numSheets; i++) {
                         pages_arrange(part, i, face + i*pps, back + i*pps);
