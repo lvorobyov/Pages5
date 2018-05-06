@@ -3,3 +3,5 @@
 *.res
 *.dll
 *.md5
+*.lib
+lib*.a 

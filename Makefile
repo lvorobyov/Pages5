@@ -1,25 +1,24 @@
 TARGET = pages5.exe
+LIB = pages.lib
 
-CXX ?= g++
-RC ?= windres
-ifneq (${CXX},g++)
-  RC = rc
-endif
 INCLUDES =
 DEFINES = -D_UNICODE -DUNICODE
 LIBS = -lcomctl32
-ifeq (${CXX},clang)
+ifneq ($(findstring clang,${CXX}),)
   LIBS += -lkernel32 -luser32 -lgdi32 -lcomdlg32
 endif
 CFLAGS = -std=c++14 -mfpmath=sse -march=atom -O2
 CLFLAGS = -masm=intel
-ifneq (${CXX},clang)
+ifeq ($(findstring clang,${CXX}),)
   CFLAGS += -flto
-  CLFLAGS += -s -Wl,--gc-sections
+  CLFLAGS += -flto -s -Wl,--gc-sections
 endif
-ifeq (${RC},windres)
+
+ifneq ($(findstring g++,${CXX}),)
+  RC = windres
   RCFLAGS += -O coff
 else
+  RC ?= rc
   RCFLAGS += /y /n /nologo
 endif
 
@@ -30,10 +29,15 @@ HDRS = $(wildcard *.h)
 RES = $(wildcard *.rc)
 RESC = $(subst .rc,.res,$(RES))
 
-all: ${TARGET}
+LIBOBJS = pages.o tcstok_n.o
+
+all: ${TARGET} ${LIB}
 
 ${TARGET}: ${OBJS} ${RESC}
 	${CXX} ${CLFLAGS} -mwindows -o $@ $^ ${LIBS}
+
+${LIB}: ${LIBOBJS}
+	${AR} ${ARFLAGS} $@ $^
 
 %.o: %.cpp ${HDRS}
 	${CXX} ${DEFINES} ${CFLAGS} ${INCLUDES} -c -o $@ $<
