@@ -226,7 +226,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
           case IDM_ITEMABOUT:
             _stprintf(lpszBuffer, TEXT("%s, version %s\n\n%s\n\n%s"),
                 TEXT("Pages5"), TEXT("2.0"),
-                TEXT("Утилита для сортировки страниц перед печатью"),
+                TEXT("Описание программы"),
                 TEXT("Copyright (c) 2018 Lev Vorobjev"));
             MessageBox(hWnd, lpszBuffer, TEXT("О программе")
                 MSG_TITLE, MB_OK | MB_ICONINFORMATION);
@@ -388,13 +388,13 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     if (n.rem != 0) {
                         numSheets ++;
                         emptyPages = numSheets*ctx.pagesPerSheet*2 - ctx.numPages;
-                        _stprintf(lpszBuffer, TEXT("Готово %d %s, добавьте "
+                        _stprintf(lpszBuffer, TEXT("Готово. %d %s, добавьте "
                             "%d %s после %d-й страницы."),
                              numSheets, SheetsStr(numSheets),
                              emptyPages, EmptyPagesStr(emptyPages), ctx.lastPage);
                         SetWindowText(spCtx->hStatusBar, lpszBuffer);
                     } else {
-                        _stprintf(lpszBuffer, TEXT("Готово %d %s"),
+                        _stprintf(lpszBuffer, TEXT("Готово. %d %s"),
                             numSheets, SheetsStr(numSheets));
                         SetWindowText(spCtx->hStatusBar, lpszBuffer);
                     }

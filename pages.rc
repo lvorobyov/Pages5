@@ -18,7 +18,7 @@ IDR_APPMENU MENU
 {
     POPUP "Файл"
     {
-        MENUITEM "Сохранить CSV", IDM_ITEMSAVE
+        MENUITEM "Сохранить, как...", IDM_ITEMSAVE
         MENUITEM SEPARATOR
         MENUITEM "Выход", IDM_ITEMQUIT
     }
@@ -38,7 +38,7 @@ IDD_DLGSOLVE DIALOG 0, 0, 281, 66
 STYLE DS_3DLOOK | DS_CENTER | DS_CONTROL | DS_SHELLFONT | WS_VISIBLE | WS_CHILDWINDOW
 FONT 8, "Ms Shell Dlg"
 {
-    CONTROL         "Печать страниц от %d до %d в %s ориентации.", IDC_LBLINFO, WC_STATIC, NOT WS_GROUP | SS_SIMPLE, 6, 8, 300, 9, WS_EX_TRANSPARENT
+    CONTROL         "Печать страниц с %d по %d в %s ориентации.", IDC_LBLINFO, WC_STATIC, NOT WS_GROUP | SS_SIMPLE | SS_WORDELLIPSIS, 6, 8, 201, 9, WS_EX_TRANSPARENT
     EDITTEXT        IDC_EDITFACE, 75, 26, 200, 14, ES_AUTOHSCROLL | ES_READONLY, WS_EX_LEFT
     EDITTEXT        IDC_EDITBACK, 75, 46, 200, 14, ES_AUTOHSCROLL | ES_READONLY, WS_EX_LEFT
     LTEXT           "Лицевая сторона", 0, 9, 28, 60, 9, SS_LEFT, WS_EX_LEFT
@@ -51,10 +51,10 @@ FONT 8, "Ms Shell Dlg"
 LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 IDD_PAGESDLG DIALOG 0, 0, 186, 130
 STYLE DS_3DLOOK | DS_CENTER | DS_MODALFRAME | DS_SHELLFONT | WS_CAPTION | WS_VISIBLE | WS_POPUP | WS_SYSMENU
-CAPTION "Сортировать страницы"
+CAPTION "Расположить страницы"
 FONT 8, "Ms Shell Dlg"
 {
-    GROUPBOX        "Параметры сортировки", 0, 6, 6, 174, 98, 0, WS_EX_LEFT
+    GROUPBOX        "Параметры расположения и нумерация", 0, 6, 6, 174, 98, 0, WS_EX_LEFT
     EDITTEXT        IDC_EDITNUM, 94, 20, 76, 14, ES_AUTOHSCROLL | ES_NUMBER, WS_EX_LEFT
     EDITTEXT        IDC_EDITPPS, 94, 40, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
     EDITTEXT        IDC_EDITFST, 94, 60, 76, 14, ES_AUTOHSCROLL, WS_EX_LEFT
@@ -96,7 +96,7 @@ LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
         {
             VALUE "Comments", ""
             VALUE "CompanyName", ""
-            VALUE "FileDescription", "Утилита для сортировки страниц перед печатью"
+            VALUE "FileDescription", "Программа для выстраивания страниц в определённом порядке"
             VALUE "FileVersion", "1.0"
             VALUE "InternalName", "pages5.exe"
             VALUE "LegalCopyright", "Copyright (c) 2018 Lev Vorobjev"
