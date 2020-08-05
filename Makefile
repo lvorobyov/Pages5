@@ -11,7 +11,7 @@ CFLAGS = -std=c++14 -mfpmath=sse -march=atom -O2
 CLFLAGS = -masm=intel
 ifeq ($(findstring clang,${CXX}),)
   CFLAGS += -flto
-  CLFLAGS += -flto -s -Wl,--gc-sections
+  CLFLAGS += -s -Wl,--gc-sections
 endif
 
 ifneq ($(findstring g++,${CXX}),)
