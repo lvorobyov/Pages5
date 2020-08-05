@@ -7,7 +7,7 @@ LIBS = -lcomctl32
 ifneq ($(findstring clang,${CXX}),)
   LIBS += -lkernel32 -luser32 -lgdi32 -lcomdlg32
 endif
-CFLAGS = -std=c++14 -mfpmath=sse -march=atom -O2
+CFLAGS = -std=c++14 -march=atom -O2
 CLFLAGS = -masm=intel
 ifeq ($(findstring clang,${CXX}),)
   CFLAGS += -flto
