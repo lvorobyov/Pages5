@@ -54,62 +54,29 @@ LPTSTR _tcstok_n(LPTSTR tcs, LPCTSTR delim, __int64 count) {
             tcs = ptr;
         }
     }
-    __asm__ (
-        ".intel_syntax noprefix\n\t"
-        "cld\n\t"
-        "mov rdi, %[delim]\n\t"
-        "mov rcx, -1\n\t"
-        "xor ax, ax\n\t"
-        "repne " SCAS_TCHAR
-        "sub rcx, -1\n\t"
-        "neg rcx\n\t"
-        "mov r8, rcx\n\t"
-        "xor rdx, rdx\n\t"
-        // Пропуск ведущих разделителей
-        ".for1:\n\t"
-        LODS_TCHAR
-        "mov rdi, %[delim]\n\t"
-        "repne " SCAS_TCHAR
-        "jne .end1\n\t"
-        "jrcxz .exit\n\t"
-        "mov rcx, r8\n\t"
-        "jmp .for1\n\t"
-        ".end1:\n\t"
-        // Найден токен
-        "test rdx, rdx\n\t"
-        "jnz .end2\n\t"
-        // Запомнить начало токена
-        DEC_ESI_TCHAR
-        "mov %0, rsi\n\t"
-		INC_ESI_TCHAR
-        "inc rdx\n\t"
-        ".end2:\n\t"
-        // Найти конец токена
-        ".for2:\n\t"
-        LODS_TCHAR
-        "mov rcx, r8\n\t"
-        "mov rdi, %[delim]\n\t"
-        "repne " SCAS_TCHAR
-        "jne .for2\n\t"
-        "jrcxz .exit\n\t"
+	int flag = 0;
+	do {
+		// Пропуск ведущих разделителей
+		if (_tcschr(delim, *tcs) != nullptr) {
+			if (*tcs++ == 0) {
+				ptr = nullptr;
+				return nullptr;
+			}
+			continue;
+		}
+		// Найден токен
+		if (flag == 0) {
+			// Запомнить начало токена
+			result = tcs++;
+			flag++;
+		}
+		// Найти конец токена
+		while (*tcs != 0 && _tcschr(delim, *tcs) == nullptr)
+			tcs++;
         // Достигнут конец токена
-        "dec rbx\n\t"
-        "test rbx, rbx\n\t"
-        "jz .end3\n\t"
-        "mov rcx, r8\n\t"
-        "jmp .for1\n\t"
-        ".end3:\n\t"
-        // Найдено N токенов
-        MOV_TCHAR_Z
-        "mov %[ptr], rsi\n\t"
-        "jmp .exit2\n\t"
-        ".exit:\n\t"
-        // Достигнут конец строки
-        "mov %[ptr], 0\n\t"
-        ".exit2:\n\t"
-        : "=m" (result), [ptr]"=m"(ptr)
-        : "S" (tcs), [delim]"r" (delim), "b" (count)
-        : "rax", "rcx", "rdx", "rdi", "r8", "cc", "memory"
-    );
+    } while (--count);
+	// Найдено N токенов
+	*tcs++ = 0;
+	ptr = tcs;
     return result;
 }
