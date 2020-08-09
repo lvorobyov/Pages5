@@ -11,6 +11,7 @@ CFLAGS = -std=c++14 -march=atom -O2
 ifeq ($(findstring clang,${CXX}),)
   CLFLAGS += -s -Wl,--gc-sections
 endif
+CLFLAGS += -static
 
 ifneq ($(findstring g++,${CXX}),)
   RC = windres
