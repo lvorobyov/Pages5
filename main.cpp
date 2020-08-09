@@ -19,7 +19,7 @@
 #define IDC_LISTVIEW  40050
 #define IDC_STATUSBAR 40051
 
-#define WND_TITLE TEXT("Сортировщик страниц")
+#define WND_TITLE TEXT("Программа для расположения страниц брошюрами")
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
 #define MSG_TITLE TEXT("Pages5")
 #define BUFFER_SIZE 512
