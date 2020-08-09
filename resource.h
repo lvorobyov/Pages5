@@ -9,6 +9,7 @@
 #define IDC_EDITFACE                            40000
 #define IDC_EDITPPS                             40000
 #define IDM_ITEMABOUT                           40000
+#define IDS_TITLE                               40000
 #define IDC_BTNSOLVE                            40001
 #define IDC_EDITFST                             40001
 #define IDM_ITEMSAVE                            40001

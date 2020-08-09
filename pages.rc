@@ -70,6 +70,17 @@ FONT 8, "Ms Shell Dlg"
 
 
 //
+// String Table resources
+//
+LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
+STRINGTABLE
+{
+    IDS_TITLE                     "Расположение страниц для печати брошюр"
+}
+
+
+
+//
 // Icon resources
 //
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL

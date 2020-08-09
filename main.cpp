@@ -1,7 +1,7 @@
 /**
  * main.cpp
- * Утилита для сортировки страниц брошуры
- * Copyright (c) 2018 Lev Vorobjev
+ * Программа для расположения страниц при печати брошюр
+ * Copyright (c) 2018 Лев Воробьёв
  */
 
 #include <windows.h>
@@ -19,9 +19,8 @@
 #define IDC_LISTVIEW  40050
 #define IDC_STATUSBAR 40051
 
-#define WND_TITLE TEXT("Программа для расположения страниц брошюрами")
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
-#define MSG_TITLE TEXT("Pages5")
+#define MSG_TITLE TEXT("Страницы 1.0")
 #define BUFFER_SIZE 512
 
 #define HANDLE_ERROR(lpszFunctionName, dwStatus) \
@@ -42,13 +41,15 @@ int APIENTRY WinMain(HINSTANCE hInstance,
              LPSTR             lpCmdLine,
              int               nCmdShow) {
     LPCTSTR lpszClass = TEXT("Pages5_Window");
-    LPCTSTR lpszTitle = WND_TITLE;
+    TCHAR lpszTitle[BUFFER_SIZE];
     HWND hWnd;
     MSG msg = {0};
     BOOL status;
 
     if (!RegMyWindowClass(hInstance, lpszClass))
         return 1;
+
+	LoadString(hInstance, IDS_TITLE, lpszTitle, BUFFER_SIZE);
 
     hWnd = CreateWindow(lpszClass, lpszTitle, WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
