@@ -423,8 +423,8 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     for (int i=0; i<numSheets; i++) {
                         pages_arrange(part, i, face + i*pps, back + i*pps);
                     }
-                    _stprintf(lpszBuffer, TEXT("Печать страниц от %d-й "
-                        "до %d-й в %ls ориентации%ls."),
+                    _stprintf(lpszBuffer, TEXT("Печать страниц с %d-й "
+                        "по %d-ю в %ls ориентации%ls."),
                         ctx.firstPage, ctx.lastPage,
                         (pages_is_lscape(part)) ? TEXT("альбомной") : TEXT("портретной"),
                         (emptyPages != 0)? TEXT(" с пустыми страницами в конце") : TEXT(""));
