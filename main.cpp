@@ -27,7 +27,7 @@
 #define HANDLE_ERROR(lpszFunctionName, dwStatus) \
     MultiByteToWideChar(CP_ACP, 0, \
         lpszFunctionName, -1, lpszBuffer, BUFFER_SIZE); \
-    _stprintf(lpszBuffer, TEXT("%s error.\nStatus code: %d"), \
+    _stprintf(lpszBuffer, TEXT("%ls error.\nStatus code: %d"), \
         lpszBuffer, dwStatus); \
     MessageBox(hWnd, lpszBuffer, MSG_TITLE, MB_OK | MB_ICONWARNING);
 
@@ -226,7 +226,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
             return 0L;
             break;
           case IDM_ITEMABOUT:
-            _stprintf(lpszBuffer, TEXT("%s, version %s\n\n%s\n\n%s"),
+            _stprintf(lpszBuffer, TEXT("%ls, version %ls\n\n%ls\n\n%ls"),
                 TEXT("Pages5"), TEXT("2.0"),
                 TEXT("Описание программы"),
                 TEXT("Copyright (c) 2018 Lev Vorobjev"));
@@ -241,7 +241,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
                 _setmode(_fileno(f), _O_U8TEXT);
                 _ftprintf(f, TEXT("\"Номер листа\",\"Лицевая сторона\",\"Обратная сторона\"\n"));
                 for (int i=0; i < ctx.nSheets; i++) {
-                    _ftprintf(f, TEXT("%d,\"%s\",\"%s\"\n"), ctx.items[i].nSheet,
+                    _ftprintf(f, TEXT("%d,\"%ls\",\"%ls\"\n"), ctx.items[i].nSheet,
                         ctx.items[i].lpszFace, ctx.items[i].lpszBack);
                 }
                 fclose(f);
@@ -389,13 +389,13 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     if (n.rem != 0) {
                         numSheets ++;
                         emptyPages = numSheets*ctx.pagesPerSheet*2 - ctx.numPages;
-                        _stprintf(lpszBuffer, TEXT("Готово. %d %s, добавьте "
-                            "%d %s после %d-й страницы."),
+                        _stprintf(lpszBuffer, TEXT("Готово. %d %ls, добавьте "
+                            "%d %ls после %d-й страницы."),
                              numSheets, SheetsStr(numSheets),
                              emptyPages, EmptyPagesStr(emptyPages), ctx.lastPage);
                         SetWindowText(spCtx->hStatusBar, lpszBuffer);
                     } else {
-                        _stprintf(lpszBuffer, TEXT("Готово. %d %s"),
+                        _stprintf(lpszBuffer, TEXT("Готово. %d %ls"),
                             numSheets, SheetsStr(numSheets));
                         SetWindowText(spCtx->hStatusBar, lpszBuffer);
                     }
@@ -413,7 +413,7 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                         pages_arrange(part, i, face + i*pps, back + i*pps);
                     }
                     _stprintf(lpszBuffer, TEXT("Печать страниц от %d-й "
-                        "до %d-й в %s ориентации%s."),
+                        "до %d-й в %ls ориентации%ls."),
                         ctx.firstPage, ctx.lastPage,
                         (pages_is_lscape(part)) ? TEXT("альбомной") : TEXT("портретной"),
                         (emptyPages != 0)? TEXT(" с пустыми страницами в конце") : TEXT(""));
