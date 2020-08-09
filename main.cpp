@@ -330,6 +330,8 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
     static int btnTop;
     static int edtHeight;
     static int edtClientSubWidth;
+    static int lblHeight;
+    static int lblClientSubWidth;
     static LPTSTR lpszBuffer;
     static LV_ITEM lvi = {0};
     switch (message) {
@@ -360,6 +362,9 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
         GetWindowRect(hEditBack, &rc);
         edtHeight = rc.bottom - rc.top;
         edtClientSubWidth = (rcClient.right-rcClient.left) - (rc.right-rc.left);
+        GetWindowRect(hLblInfo, &rc);
+        lblHeight = rc.bottom - rc.top;
+        lblClientSubWidth = (rcClient.right-rcClient.left) - (rc.right-rc.left);
         break;
       }
       case WM_SIZE:
@@ -376,6 +381,9 @@ BOOL CALLBACK SolvePaneProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
         SetWindowPos(hEditBack, HWND_TOP,
             0, 0, clientWidth - edtClientSubWidth,
             edtHeight, SWP_NOMOVE);
+		SetWindowPos(hLblInfo, HWND_TOP,
+			0, 0, clientWidth - lblClientSubWidth,
+			lblHeight, SWP_NOMOVE);
         return 0;
       }
       case WM_COMMAND:
