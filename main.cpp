@@ -235,8 +235,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
           {
             ofn.lpstrTitle = TEXT("Сохранить таблицу листов, как");
             if (GetSaveFileName(&ofn)) {
-                FILE *f = NULL;
-                _tfopen_s(&f, ofn.lpstrFile, TEXT("w"));
+                FILE *f = _tfopen(ofn.lpstrFile, TEXT("w"));
                 _setmode(_fileno(f), _O_U8TEXT);
                 _ftprintf(f, TEXT("\"Номер листа\",\"Лицевая сторона\",\"Обратная сторона\"\n"));
                 for (int i=0; i < ctx.nSheets; i++) {
