@@ -20,7 +20,7 @@
 #define IDC_STATUSBAR 40051
 
 #define WND_MENU_NAME MAKEINTRESOURCE(IDR_APPMENU)
-#define MSG_TITLE TEXT("Страницы 1.0")
+#define MSG_TITLE TEXT("Страницы 2.0")
 #define BUFFER_SIZE 512
 
 #define HANDLE_ERROR(lpszFunctionName, dwStatus) \
@@ -67,14 +67,14 @@ int APIENTRY WinMain(HINSTANCE hInstance,
     return msg.wParam;
 }
 
-ATOM RegMyWindowClass(HINSTANCE hInst, LPCTSTR lpszClassName) {
+ATOM RegMyWindowClass(HINSTANCE hInstance, LPCTSTR lpszClassName) {
     WNDCLASS wcWindowClass = {0};
     wcWindowClass.lpfnWndProc = (WNDPROC)WndProc;
     wcWindowClass.style = CS_HREDRAW|CS_VREDRAW;
-    wcWindowClass.hInstance = hInst;
+    wcWindowClass.hInstance = hInstance;
     wcWindowClass.lpszClassName = lpszClassName;
     wcWindowClass.lpszMenuName = WND_MENU_NAME;
-    wcWindowClass.hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+    wcWindowClass.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     wcWindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
     wcWindowClass.hbrBackground = (HBRUSH) ( COLOR_WINDOW + 1);
     wcWindowClass.cbClsExtra = 0;
@@ -112,7 +112,7 @@ int GetWindowHeight(HWND hWnd) {
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
                          WPARAM wParam, LPARAM lParam) {
     HDC hdc;
-    HINSTANCE hInst;
+    HINSTANCE hInstance;
     PAINTSTRUCT ps;
 
 	static LPTSTR lpszBuffer;
@@ -137,16 +137,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
     static OPENFILENAME ofn = { sizeof(OPENFILENAME) };
     const int nMaxFile = 80;
 
+	static TCHAR lpszDescription[BUFFER_SIZE];
+
 	switch (message) {
       case WM_CREATE:
-        hInst = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
+        hInstance = (HINSTANCE) GetWindowLongPtr(hWnd, GWLP_HINSTANCE);
 		lpszBuffer = (LPTSTR)calloc(BUFFER_SIZE,sizeof(TCHAR));
 		GetClientRect(hWnd, &rc);
         InitCommonControls();
         ctx.hwndOwner = hWnd;
-        ctx.hInstance = hInst;
+        ctx.hInstance = hInstance;
         ctx.lpszBuffer = lpszBuffer;
-        hSolvePane = CreateDialogParam(hInst,
+        hSolvePane = CreateDialogParam(hInstance,
             MAKEINTRESOURCE(IDD_DLGSOLVE),
             hWnd,
             (DLGPROC) SolvePaneProc,
@@ -157,7 +159,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         // Создание строки состояния
         ctx.hStatusBar = CreateWindowEx(0L, STATUSCLASSNAME, NULL,
             WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
-            0, 0, 0, 0, hWnd, (HMENU) IDC_STATUSBAR, hInst, NULL);
+            0, 0, 0, 0, hWnd, (HMENU) IDC_STATUSBAR, hInstance, NULL);
         SetWindowText(ctx.hStatusBar, TEXT("Готово"));
         nStatusBarHeight = GetWindowHeight(ctx.hStatusBar);
         // Создание списка
@@ -166,7 +168,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 			LVS_SINGLESEL | LVS_AUTOARRANGE | LVS_EDITLABELS,
             0, nPaneHeight, rc.right - rc.left,
             rc.bottom - rc.top - nPaneHeight,
-            hWnd, (HMENU)IDC_LISTVIEW, hInst, NULL);
+            hWnd, (HMENU)IDC_LISTVIEW, hInstance, NULL);
         if (ctx.hListView == NULL)
             return FALSE;
 		ListView_SetExtendedListViewStyle(ctx.hListView,
@@ -175,8 +177,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
             GetSystemMetrics(SM_CYSMICON), ILC_MASK|ILC_COLOR32, 1, 1);
         hImageListLarge = ImageList_Create(GetSystemMetrics(SM_CXICON),
             GetSystemMetrics(SM_CYICON), ILC_MASK|ILC_COLOR32, 1, 1);
-        // TODO: добавить иконки
-        hIcon = LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1));
+        // Добавление иконок
+        hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
         ImageList_AddIcon(hImageListSmall, hIcon);
         ImageList_AddIcon(hImageListLarge, hIcon);
         ListView_SetImageList(ctx.hListView, hImageListSmall, LVSIL_SMALL);
@@ -198,7 +200,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         lvc.iSubItem = 2;
         ListView_InsertColumn(ctx.hListView, 2, &lvc);
         // Инициализация диалога сохранения файла
-        ofn.hInstance = hInst;
+        ofn.hInstance = hInstance;
         ofn.hwndOwner = hWnd;
         ofn.lpstrFile = (LPTSTR)calloc(nMaxFile,sizeof(TCHAR));
         _tcscpy_e(ofn.lpstrFile, nMaxFile, TEXT("\0"));
@@ -210,6 +212,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         ofn.lpstrInitialDir = NULL;
         ofn.lpstrDefExt = TEXT("csv");
         ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_OVERWRITEPROMPT;
+		LoadString(hInstance, IDS_DESCRIPTION, lpszDescription, BUFFER_SIZE);
         SendMessage(hSolvePane, WM_COMMAND,
             (WPARAM)IDC_BTNSOLVE, (LPARAM)0L);
 		break;
@@ -227,11 +230,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
             return 0L;
             break;
           case IDM_ITEMABOUT:
-            _stprintf(lpszBuffer, TEXT("%ls, version %ls\n\n%ls\n\n%ls"),
-                TEXT("Pages5"), TEXT("2.0"),
-                TEXT("Описание программы"),
-                TEXT("Copyright (c) 2018 Lev Vorobjev"));
-            MessageBox(hWnd, lpszBuffer, TEXT("О программе")
+            _stprintf(lpszBuffer, TEXT("%ls, версия %ls\n\n%ls\n\n%ls"),
+                TEXT("Страницы"), TEXT("2.0"), lpszDescription,
+                TEXT("Copyright (c) 2018 Лев Воробьёв"));
+            MessageBox(hWnd, lpszBuffer, TEXT("О программе: ")
                 MSG_TITLE, MB_OK | MB_ICONINFORMATION);
             break;
           case IDM_ITEMSAVE:

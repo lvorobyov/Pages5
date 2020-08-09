@@ -13,6 +13,7 @@
 #define IDC_BTNSOLVE                            40001
 #define IDC_EDITFST                             40001
 #define IDM_ITEMSAVE                            40001
+#define IDS_DESCRIPTION                         40001
 #define IDC_EDITBACK                            40002
 #define IDC_EDITNUM                             40002
 #define IDM_ITEMQUIT                            40002
