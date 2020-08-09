@@ -31,6 +31,8 @@
         lpszBuffer, dwStatus); \
     MessageBox(hWnd, lpszBuffer, MSG_TITLE, MB_OK | MB_ICONWARNING);
 
+#define _tcscpy_e(dst,len,src) _tcscpy(dst,src)
+
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 ATOM RegMyWindowClass(HINSTANCE, LPCTSTR);
 BOOL CALLBACK SolvePaneProc(HWND, UINT, WPARAM, LPARAM);
@@ -182,15 +184,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         lvc.mask = lvcMask;
         lvc.fmt = LVCFMT_LEFT;
         lvc.cx = 150;
-        _tcscpy_s(lpszBuffer, BUFFER_SIZE, TEXT("Номер листа"));
+        _tcscpy_e(lpszBuffer, BUFFER_SIZE, TEXT("Номер листа"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 0;
         ListView_InsertColumn(ctx.hListView, 0, &lvc);
-        _tcscpy_s(lpszBuffer, BUFFER_SIZE, TEXT("Лицевая сторона"));
+        _tcscpy_e(lpszBuffer, BUFFER_SIZE, TEXT("Лицевая сторона"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 1;
         ListView_InsertColumn(ctx.hListView, 1, &lvc);
-        _tcscpy_s(lpszBuffer, BUFFER_SIZE, TEXT("Обратная сторона"));
+        _tcscpy_e(lpszBuffer, BUFFER_SIZE, TEXT("Обратная сторона"));
         lvc.pszText = lpszBuffer;
         lvc.iSubItem = 2;
         ListView_InsertColumn(ctx.hListView, 2, &lvc);
@@ -198,7 +200,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
         ofn.hInstance = hInst;
         ofn.hwndOwner = hWnd;
         ofn.lpstrFile = (LPTSTR)calloc(nMaxFile,sizeof(TCHAR));
-        _tcscpy_s(ofn.lpstrFile, nMaxFile, TEXT("\0"));
+        _tcscpy_e(ofn.lpstrFile, nMaxFile, TEXT("\0"));
         ofn.nMaxFile = nMaxFile;
         ofn.lpstrFilter = TEXT("Все файлы\0*.*\0Текстовые файлы (TXT)\0*.txt\0Значения, разделенные запятыми (CSV)\0*.csv");
         ofn.nFilterIndex = 3;
